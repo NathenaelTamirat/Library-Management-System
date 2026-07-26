@@ -53,6 +53,8 @@ public final class CatalogController {
     @FXML
     private Button finesButton;
     @FXML
+    private Button myLoansButton;
+    @FXML
     private Button addButton;
     @FXML
     private Button editButton;
@@ -110,6 +112,10 @@ public final class CatalogController {
                 || authorization.isAllowed(currentUser.role(), Permission.MANAGE_LOANS);
         finesButton.setVisible(showFines);
         finesButton.setManaged(showFines);
+        boolean showMyLoans = currentUser instanceof Member
+                || authorization.isAllowed(currentUser.role(), Permission.MANAGE_LOANS);
+        myLoansButton.setVisible(showMyLoans);
+        myLoansButton.setManaged(showMyLoans);
         boolean catalogManager = authorization.isAllowed(
                 currentUser.role(), Permission.MANAGE_CATALOG);
         addButton.setVisible(catalogManager);
@@ -281,6 +287,26 @@ public final class CatalogController {
             dialog.showAndWait();
         } catch (IOException failure) {
             statusLabel.setText("Unable to open fines desk: " + failure.getMessage());
+        }
+    }
+
+    @FXML
+    private void showMyLoans() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/my-loans.fxml"));
+            loader.setController(new MyLoansController(circulation, currentUser, currentUser.id()));
+            Parent root = loader.load();
+            Stage dialog = new Stage();
+            dialog.initModality(Modality.APPLICATION_MODAL);
+            dialog.setTitle("My loans");
+            Scene scene = new Scene(root, 640, 460);
+            scene.getStylesheets().add(
+                    getClass().getResource("/view/library.css").toExternalForm());
+            dialog.setScene(scene);
+            dialog.showAndWait();
+            search();
+        } catch (IOException failure) {
+            statusLabel.setText("Unable to open loans desk: " + failure.getMessage());
         }
     }
 

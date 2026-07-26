@@ -36,6 +36,9 @@
                 <Button fx:id="finesButton"
                         text="Fines"
                         onAction="#showFines"/>
+                <Button fx:id="myLoansButton"
+                        text="My loans"
+                        onAction="#showMyLoans"/>
                 <Button fx:id="addButton"
                         text="Add book"
                         onAction="#addBook"/>
