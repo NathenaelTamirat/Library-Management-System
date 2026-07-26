@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns:fx="http://javafx.com/fxml" spacing="12" styleClass="dialog-root">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+    <Label text="Book detail" styleClass="title"/>
+    <GridPane hgap="12" vgap="8">
+        <Label text="ISBN" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <Label fx:id="isbnLabel" accessibleText="ISBN value"
+               GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+        <Label text="Title" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+        <Label fx:id="titleLabel" accessibleText="Title value"
+               GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+        <Label text="Author" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+        <Label fx:id="authorLabel" accessibleText="Author value"
+               GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+        <Label text="Genre" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+        <Label fx:id="genreLabel" accessibleText="Genre value"
+               GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+        <Label text="Year" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+        <Label fx:id="yearLabel" accessibleText="Publication year value"
+               GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+        <Label text="Total copies" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+        <Label fx:id="totalLabel" accessibleText="Total copies value"
+               GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+        <Label text="Available" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
+        <Label fx:id="availableLabel" accessibleText="Available copies value"
+               GridPane.columnIndex="1" GridPane.rowIndex="6"/>
+    </GridPane>
+    <HBox spacing="10">
+        <Button text="_Close" mnemonicParsing="true" accessibleText="Close book detail"
+                cancelButton="true" defaultButton="true" onAction="#close"/>
+    </HBox>
+</VBox>

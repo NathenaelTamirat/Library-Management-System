@@ -84,6 +84,11 @@
                         mnemonicParsing="true"
                         accessibleText="Edit selected book"
                         onAction="#editSelected"/>
+                <Button fx:id="detailButton"
+                        text="Detai_l"
+                        mnemonicParsing="true"
+                        accessibleText="View selected book detail"
+                        onAction="#showBookDetail"/>
                 <Button fx:id="deleteButton"
                         text="_Delete selected"
                         mnemonicParsing="true"

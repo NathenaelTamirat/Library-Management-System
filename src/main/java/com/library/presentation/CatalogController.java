@@ -77,6 +77,8 @@ public final class CatalogController {
     @FXML
     private Button editButton;
     @FXML
+    private Button detailButton;
+    @FXML
     private Button deleteButton;
     @FXML
     private Button changePasswordButton;
@@ -169,6 +171,8 @@ public final class CatalogController {
         addButton.setManaged(catalogManager);
         editButton.setVisible(catalogManager);
         editButton.setManaged(catalogManager);
+        detailButton.setVisible(true);
+        detailButton.setManaged(true);
         deleteButton.setVisible(catalogManager);
         deleteButton.setManaged(catalogManager);
     }
@@ -317,6 +321,30 @@ public final class CatalogController {
             return;
         }
         openEditor(Optional.of(selected));
+    }
+
+    @FXML
+    private void showBookDetail() {
+        Book selected = selectedBook();
+        if (selected == null) {
+            statusLabel.setText("Select a book to view");
+            return;
+        }
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/book-detail.fxml"));
+            loader.setController(new BookDetailController(selected));
+            Parent root = loader.load();
+            Stage dialog = new Stage();
+            dialog.initModality(Modality.APPLICATION_MODAL);
+            dialog.setTitle("Book detail");
+            Scene scene = new Scene(root, 480, 360);
+            scene.getStylesheets().add(
+                    getClass().getResource("/view/library.css").toExternalForm());
+            dialog.setScene(scene);
+            dialog.showAndWait();
+        } catch (IOException failure) {
+            statusLabel.setText("Unable to open book detail: " + failure.getMessage());
+        }
     }
 
     @FXML
