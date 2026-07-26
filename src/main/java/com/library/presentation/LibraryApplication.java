@@ -6,6 +6,7 @@ import com.library.data.JdbcBookRepository;
 import com.library.data.JdbcFineRepository;
 import com.library.data.JdbcLoanTransactionManager;
 import com.library.data.JdbcRecommendationRepository;
+import com.library.data.JdbcUserAdminRepository;
 import com.library.data.JdbcUserLookup;
 import com.library.domain.User;
 import com.library.security.Argon2PasswordHasher;
@@ -16,6 +17,7 @@ import com.library.service.CatalogService;
 import com.library.service.CirculationService;
 import com.library.service.FineService;
 import com.library.service.RecommendationService;
+import com.library.service.UserAdminService;
 import com.zaxxer.hikari.HikariDataSource;
 import java.io.IOException;
 import java.time.Clock;
@@ -32,6 +34,7 @@ public final class LibraryApplication extends Application {
     private CirculationService circulation;
     private FineService fines;
     private RecommendationService recommendations;
+    private UserAdminService userAdmin;
     private AuthorizationService authorization;
 
     @Override
@@ -59,9 +62,15 @@ public final class LibraryApplication extends Application {
         fines = new FineService(fineRepository, authorization, audit);
         recommendations = new RecommendationService(
                 new JdbcRecommendationRepository(dataSource), authorization);
+        Argon2PasswordHasher passwordHasher = new Argon2PasswordHasher();
         AuthenticationService authentication = new AuthenticationService(
                 new JdbcUserLookup(dataSource, 5),
-                new Argon2PasswordHasher());
+                passwordHasher);
+        userAdmin = new UserAdminService(
+                new JdbcUserAdminRepository(dataSource),
+                passwordHasher,
+                authorization,
+                audit);
 
         FXMLLoader loader = new FXMLLoader(LibraryApplication.class.getResource("/view/login.fxml"));
         loader.setController(new LoginController(authentication, this::showCatalog));

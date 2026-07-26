@@ -17,7 +17,7 @@ public final class JdbcUserLookup implements AuthenticationService.UserLookup {
     private static final String FIND_BY_EMAIL = """
             SELECT id, name, email, password_hash, role
             FROM users
-            WHERE email = ?
+            WHERE email = ? AND is_active = TRUE
             """;
 
     private final DataSource dataSource;

@@ -31,7 +31,8 @@ class JdbcUserLookupTest {
                         name VARCHAR(200) NOT NULL,
                         email VARCHAR(320) NOT NULL UNIQUE,
                         password_hash VARCHAR(500) NOT NULL,
-                        role VARCHAR(20) NOT NULL
+                        role VARCHAR(20) NOT NULL,
+                        is_active BOOLEAN NOT NULL DEFAULT TRUE
                     )
                     """);
         }
