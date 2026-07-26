@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Consumer;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -23,6 +22,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
@@ -262,6 +262,15 @@ public final class CatalogController {
         Book selected = resultsList.getSelectionModel().getSelectedItem();
         if (selected == null) {
             statusLabel.setText("Select a book to delete");
+            return;
+        }
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Confirm delete");
+        confirm.setHeaderText("Delete this book from the catalog?");
+        confirm.setContentText(selected.title() + " (" + selected.isbn() + ")");
+        Optional<ButtonType> answer = confirm.showAndWait();
+        if (answer.isEmpty() || answer.orElseThrow() != ButtonType.OK) {
+            statusLabel.setText("Delete cancelled");
             return;
         }
         runMutation(deleteButton, "Deleting…", () ->
