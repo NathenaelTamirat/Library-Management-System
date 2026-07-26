@@ -2,6 +2,7 @@ package com.library.presentation;
 
 import com.library.domain.Book;
 import com.library.domain.Member;
+import com.library.domain.ReturnReceipt;
 import com.library.domain.User;
 import com.library.security.AuthorizationService;
 import com.library.security.Permission;
@@ -19,6 +20,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -191,8 +193,37 @@ public final class CatalogController {
             statusLabel.setText("Select a book to return");
             return;
         }
-        runMutation(returnButton, "Returning…", () ->
-                circulation.returnSelectedBook(currentUser, selected.isbn()));
+        Task<ReturnReceipt> task = new Task<>() {
+            @Override
+            protected ReturnReceipt call() throws Exception {
+                return circulation.returnSelectedBook(currentUser, selected.isbn());
+            }
+        };
+        returnButton.disableProperty().bind(task.runningProperty());
+        statusLabel.setText("Returning…");
+        task.setOnSucceeded(ignored -> {
+            showReturnReceipt(task.getValue());
+            search();
+        });
+        task.setOnFailed(ignored ->
+                statusLabel.setText("Operation failed: " + task.getException().getMessage()));
+        Thread worker = new Thread(task, "catalog-return");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private void showReturnReceipt(ReturnReceipt receipt) {
+        String fineText = receipt.fine()
+                .map(fine -> fine.amount().toPlainString())
+                .orElse("0.00");
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Return receipt");
+        alert.setHeaderText("Return completed");
+        alert.setContentText("Loan ID: " + receipt.loan().id()
+                + "\nISBN: " + receipt.loan().isbn()
+                + "\nFine: " + fineText);
+        alert.showAndWait();
+        statusLabel.setText("Returned loan " + receipt.loan().id() + " (fine " + fineText + ")");
     }
 
     @FXML
