@@ -10,6 +10,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import javax.sql.DataSource;
@@ -72,6 +74,33 @@ public final class JdbcLoanTransactionManager implements LoanTransactionManager 
             FROM loans
             WHERE user_id = ? AND status IN ('ACTIVE', 'OVERDUE')
             """;
+    private static final String MARK_OVERDUE = """
+            UPDATE loans
+            SET status = 'OVERDUE'
+            WHERE status = 'ACTIVE' AND due_date < ?
+            """;
+    private static final String MARK_LOST = """
+            UPDATE loans
+            SET status = 'LOST'
+            WHERE id = ? AND status IN ('ACTIVE', 'OVERDUE')
+            """;
+    private static final String COUNT_OPEN_BY_ISBN = """
+            SELECT COUNT(*)
+            FROM loans
+            WHERE isbn = ? AND status IN ('ACTIVE', 'OVERDUE')
+            """;
+    private static final String FIND_OPEN_BY_USER = """
+            SELECT id, user_id, isbn, checkout_date, due_date, return_date, status, renewal_count
+            FROM loans
+            WHERE user_id = ? AND status IN ('ACTIVE', 'OVERDUE')
+            ORDER BY due_date
+            """;
+    private static final String FIND_OVERDUE = """
+            SELECT id, user_id, isbn, checkout_date, due_date, return_date, status, renewal_count
+            FROM loans
+            WHERE status = 'OVERDUE'
+            ORDER BY due_date
+            """;
 
     private final DataSource dataSource;
 
@@ -130,6 +159,82 @@ public final class JdbcLoanTransactionManager implements LoanTransactionManager 
             } finally {
                 connection.setAutoCommit(true);
             }
+        }
+    }
+
+    @Override
+    public int markOverdueBefore(LocalDate asOfDate) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(MARK_OVERDUE)) {
+            statement.setObject(1, asOfDate);
+            return statement.executeUpdate();
+        }
+    }
+
+    @Override
+    public Loan markLost(UUID loanId, BigDecimal replacementFine, LocalDate issuedDate)
+            throws SQLException {
+        try (Connection connection = dataSource.getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                Loan loan = lockLoan(connection, loanId);
+                loan.markLost();
+                try (PreparedStatement statement = connection.prepareStatement(MARK_LOST)) {
+                    statement.setObject(1, loanId);
+                    if (statement.executeUpdate() != 1) {
+                        throw new SQLException("Loan could not be marked lost: " + loanId);
+                    }
+                }
+                Fine fine = new Fine(UUID.randomUUID(), loanId, replacementFine, false, issuedDate);
+                insertFine(connection, fine);
+                connection.commit();
+                return loan;
+            } catch (SQLException | RuntimeException failure) {
+                rollback(connection, failure);
+                throw failure;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        }
+    }
+
+    @Override
+    public int countOpenLoansByIsbn(String isbn) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(COUNT_OPEN_BY_ISBN)) {
+            statement.setString(1, isbn);
+            try (ResultSet results = statement.executeQuery()) {
+                results.next();
+                return results.getInt(1);
+            }
+        }
+    }
+
+    @Override
+    public List<Loan> findOpenLoansByUser(UUID userId) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(FIND_OPEN_BY_USER)) {
+            statement.setObject(1, userId);
+            try (ResultSet results = statement.executeQuery()) {
+                List<Loan> loans = new ArrayList<>();
+                while (results.next()) {
+                    loans.add(mapLoan(results));
+                }
+                return loans;
+            }
+        }
+    }
+
+    @Override
+    public List<Loan> findOverdueLoans() throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(FIND_OVERDUE);
+             ResultSet results = statement.executeQuery()) {
+            List<Loan> loans = new ArrayList<>();
+            while (results.next()) {
+                loans.add(mapLoan(results));
+            }
+            return loans;
         }
     }
 

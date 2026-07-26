@@ -8,12 +8,16 @@ import com.library.domain.ReturnReceipt;
 import com.library.domain.User;
 import com.library.security.AuthorizationService;
 import com.library.security.Permission;
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 public final class CirculationService {
+    public static final BigDecimal REPLACEMENT_FINE = new BigDecimal("50.00");
+
     private final LoanTransactionManager transactions;
     private final FineRepository fines;
     private final AuthorizationService authorization;
@@ -98,6 +102,39 @@ public final class CirculationService {
                 "RENEW",
                 "{\"loanId\":\"" + loanId + "\",\"dueDate\":\"" + renewed.dueDate() + "\"}");
         return renewed;
+    }
+
+    public int reconcileOverdue(User actor) throws SQLException {
+        authorization.require(actor.role(), Permission.MANAGE_LOANS);
+        int updated = transactions.markOverdueBefore(LocalDate.now(clock));
+        audit.record(actor.id(), "RECONCILE_OVERDUE", "{\"updated\":" + updated + "}");
+        return updated;
+    }
+
+    public Loan markLost(User actor, UUID loanId) throws SQLException {
+        authorization.require(actor.role(), Permission.MANAGE_LOANS);
+        Loan lost = transactions.markLost(loanId, REPLACEMENT_FINE, LocalDate.now(clock));
+        if (actor instanceof Member member) {
+            member.removeActiveLoan(loanId);
+        }
+        audit.record(
+                actor.id(),
+                "MARK_LOST",
+                "{\"loanId\":\"" + loanId + "\",\"fine\":\""
+                        + REPLACEMENT_FINE.toPlainString() + "\"}");
+        return lost;
+    }
+
+    public List<Loan> openLoansFor(User actor, UUID memberId) throws SQLException {
+        if (!actor.id().equals(memberId)) {
+            authorization.require(actor.role(), Permission.MANAGE_LOANS);
+        }
+        return transactions.findOpenLoansByUser(memberId);
+    }
+
+    public List<Loan> overdueLoans(User actor) throws SQLException {
+        authorization.require(actor.role(), Permission.MANAGE_LOANS);
+        return transactions.findOverdueLoans();
     }
 
     private void authorizeReturn(User actor, Loan loan) {

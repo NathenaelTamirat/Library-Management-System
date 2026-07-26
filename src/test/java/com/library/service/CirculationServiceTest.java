@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.library.data.FineRepository;
 import com.library.data.LoanTransactionManager;
 import com.library.domain.Fine;
+import com.library.domain.Librarian;
 import com.library.domain.Loan;
 import com.library.domain.LoanStatus;
 import com.library.domain.Member;
@@ -101,6 +102,22 @@ class CirculationServiceTest {
     }
 
     @Test
+    void staffCanReconcileOverdueLoansUsingInjectedClock() throws Exception {
+        RecordingTransactions transactions = new RecordingTransactions();
+        RecordingAuditRepository audits = new RecordingAuditRepository();
+        Clock clock = Clock.fixed(Instant.parse("2026-07-26T00:00:00Z"), ZoneOffset.UTC);
+        CirculationService circulation = service(transactions, audits, clock, new RecordingFines(), 14);
+        Librarian librarian = new Librarian(
+                UUID.randomUUID(), "Libby", "lib@example.edu", "hash", "desk", false);
+
+        int updated = circulation.reconcileOverdue(librarian);
+
+        assertEquals(LocalDate.of(2026, 7, 26), transactions.overdueAsOf);
+        assertEquals(2, updated);
+        assertEquals(List.of("RECONCILE_OVERDUE"), audits.actions);
+    }
+
+    @Test
     void memberCanRenewOwnLoan() throws Exception {
         RecordingTransactions transactions = new RecordingTransactions();
         RecordingAuditRepository audits = new RecordingAuditRepository();
@@ -181,6 +198,7 @@ class CirculationServiceTest {
         private int returnCalls;
         private LocalDate checkoutDate;
         private LocalDate dueDate;
+        private LocalDate overdueAsOf;
         private final Map<UUID, Loan> loans = new HashMap<>();
 
         @Override
@@ -221,6 +239,44 @@ class CirculationServiceTest {
         }
 
         @Override
+        public int markOverdueBefore(LocalDate asOfDate) {
+            overdueAsOf = asOfDate;
+            return 2;
+        }
+
+        @Override
+        public Loan markLost(UUID loanId, BigDecimal replacementFine, LocalDate issuedDate) {
+            Loan loan = loans.get(loanId);
+            loan.markLost();
+            return loan;
+        }
+
+        @Override
+        public int countOpenLoansByIsbn(String isbn) {
+            return (int) loans.values().stream()
+                    .filter(loan -> loan.isbn().equals(isbn))
+                    .filter(loan -> loan.status() != LoanStatus.RETURNED
+                            && loan.status() != LoanStatus.LOST)
+                    .count();
+        }
+
+        @Override
+        public List<Loan> findOpenLoansByUser(UUID userId) {
+            return loans.values().stream()
+                    .filter(loan -> loan.userId().equals(userId))
+                    .filter(loan -> loan.status() != LoanStatus.RETURNED
+                            && loan.status() != LoanStatus.LOST)
+                    .toList();
+        }
+
+        @Override
+        public List<Loan> findOverdueLoans() {
+            return loans.values().stream()
+                    .filter(loan -> loan.status() == LoanStatus.OVERDUE)
+                    .toList();
+        }
+
+        @Override
         public Optional<Loan> findById(UUID loanId) {
             return Optional.ofNullable(loans.get(loanId));
         }
@@ -229,7 +285,8 @@ class CirculationServiceTest {
         public Optional<Loan> findActiveLoanByIsbn(String isbn) {
             return loans.values().stream()
                     .filter(loan -> loan.isbn().equals(isbn))
-                    .filter(loan -> loan.status() != LoanStatus.RETURNED)
+                    .filter(loan -> loan.status() != LoanStatus.RETURNED
+                            && loan.status() != LoanStatus.LOST)
                     .findFirst();
         }
     }

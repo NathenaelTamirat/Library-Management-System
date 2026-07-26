@@ -175,6 +175,20 @@ class JdbcLoanTransactionManagerTest {
     }
 
     @Test
+    void markOverdueBeforeFlipsPastDueActiveLoans() throws Exception {
+        transactions.checkout(
+                userId,
+                "9780134685991",
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 7, 10),
+                5);
+
+        assertEquals(1, transactions.markOverdueBefore(LocalDate.of(2026, 7, 26)));
+        assertEquals(1, scalar("SELECT COUNT(*) FROM loans WHERE status = 'OVERDUE'"));
+        assertEquals(0, transactions.markOverdueBefore(LocalDate.of(2026, 7, 26)));
+    }
+
+    @Test
     void renewExtendsDueDateUnderRowLock() throws Exception {
         Loan loan = transactions.checkout(
                 userId,
