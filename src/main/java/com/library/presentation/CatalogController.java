@@ -1,6 +1,7 @@
 package com.library.presentation;
 
 import com.library.domain.Book;
+import com.library.domain.Loan;
 import com.library.domain.Member;
 import com.library.domain.ReturnReceipt;
 import com.library.domain.User;
@@ -173,8 +174,34 @@ public final class CatalogController {
             statusLabel.setText("Select a book to borrow");
             return;
         }
-        runMutation(borrowButton, "Checking out…", () ->
-                circulation.checkout(member, selected.isbn()));
+        Task<Loan> task = new Task<>() {
+            @Override
+            protected Loan call() throws Exception {
+                return circulation.checkout(member, selected.isbn());
+            }
+        };
+        borrowButton.disableProperty().bind(task.runningProperty());
+        statusLabel.setText("Checking out…");
+        task.setOnSucceeded(ignored -> {
+            showCheckoutSuccess(task.getValue());
+            search();
+        });
+        task.setOnFailed(ignored ->
+                statusLabel.setText("Operation failed: " + task.getException().getMessage()));
+        Thread worker = new Thread(task, "catalog-checkout");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private void showCheckoutSuccess(Loan loan) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Checkout complete");
+        alert.setHeaderText("Book borrowed successfully");
+        alert.setContentText("Loan ID: " + loan.id()
+                + "\nISBN: " + loan.isbn()
+                + "\nDue date: " + loan.dueDate());
+        alert.showAndWait();
+        statusLabel.setText("Checked out until " + loan.dueDate() + " (loan " + loan.id() + ")");
     }
 
     @FXML

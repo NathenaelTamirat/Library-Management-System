@@ -1,6 +1,7 @@
 package com.library.presentation;
 
 import com.library.domain.BookRecommendation;
+import com.library.domain.Loan;
 import com.library.domain.Member;
 import com.library.service.CirculationService;
 import com.library.service.RecommendationService;
@@ -8,6 +9,7 @@ import java.util.List;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -92,16 +94,26 @@ public final class RecommendationController {
             statusLabel.setText("Select a recommendation to borrow");
             return;
         }
-        Task<Void> task = new Task<>() {
+        Task<Loan> task = new Task<>() {
             @Override
-            protected Void call() throws Exception {
-                circulation.checkout(member, selected.book().isbn());
-                return null;
+            protected Loan call() throws Exception {
+                return circulation.checkout(member, selected.book().isbn());
             }
         };
         borrowButton.disableProperty().bind(task.runningProperty());
         statusLabel.setText("Checking out " + selected.book().title() + "…");
-        task.setOnSucceeded(ignored -> refresh());
+        task.setOnSucceeded(ignored -> {
+            Loan loan = task.getValue();
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Checkout complete");
+            alert.setHeaderText("Book borrowed successfully");
+            alert.setContentText("Loan ID: " + loan.id()
+                    + "\nISBN: " + loan.isbn()
+                    + "\nDue date: " + loan.dueDate());
+            alert.showAndWait();
+            statusLabel.setText("Checked out until " + loan.dueDate());
+            refresh();
+        });
         task.setOnFailed(ignored ->
                 statusLabel.setText("Checkout failed: " + task.getException().getMessage()));
         start(task, "recommendation-checkout");
