@@ -77,6 +77,20 @@ class JdbcBookRepositoryTest {
     }
 
     @Test
+    void updateLocksBookRowBeforeChangingInventory() throws Exception {
+        Book book = new Book("9780134685991", "Effective Java", "Joshua Bloch", 2, 1);
+        repository.save(book);
+        book.rename("Effective Java 3e", "Joshua Bloch");
+        Book revised = new Book(
+                book.isbn(), book.title(), book.author(), 3, 2, book.genre(), book.publicationYear());
+        repository.update(revised);
+        Book loaded = repository.findByIsbn(book.isbn()).orElseThrow();
+        assertEquals(3, loaded.totalCopies());
+        assertEquals(2, loaded.availableCopies());
+        assertEquals("Effective Java 3e", loaded.title());
+    }
+
+    @Test
     void h2KeepsSafeLikeFallbackWhenFullTextIsDisabled() throws Exception {
         Book book = new Book("9780134685991", "Effective Java", "Joshua Bloch", 1, 1);
         repository.save(book);

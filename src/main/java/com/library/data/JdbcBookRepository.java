@@ -110,22 +110,43 @@ public final class JdbcBookRepository implements BookRepository {
 
     @Override
     public void update(Book book) throws SQLException {
+        String lockSql = "SELECT isbn FROM books WHERE isbn = ? FOR UPDATE";
         String sql = """
                 UPDATE books
                 SET title = ?, author = ?, total_copies = ?, available_copies = ?,
                     genre = ?, publication_year = ?
                 WHERE isbn = ?
                 """;
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, book.title());
-            statement.setString(2, book.author());
-            statement.setInt(3, book.totalCopies());
-            statement.setInt(4, book.availableCopies());
-            setOptionalText(statement, 5, book.genre());
-            setOptionalYear(statement, 6, book.publicationYear());
-            statement.setString(7, book.isbn());
-            statement.executeUpdate();
+        try (Connection connection = dataSource.getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                try (PreparedStatement lock = connection.prepareStatement(lockSql)) {
+                    lock.setString(1, book.isbn());
+                    try (ResultSet results = lock.executeQuery()) {
+                        if (!results.next()) {
+                            throw new SQLException("Book not found: " + book.isbn());
+                        }
+                    }
+                }
+                try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                    statement.setString(1, book.title());
+                    statement.setString(2, book.author());
+                    statement.setInt(3, book.totalCopies());
+                    statement.setInt(4, book.availableCopies());
+                    setOptionalText(statement, 5, book.genre());
+                    setOptionalYear(statement, 6, book.publicationYear());
+                    statement.setString(7, book.isbn());
+                    if (statement.executeUpdate() != 1) {
+                        throw new SQLException("Book could not be updated: " + book.isbn());
+                    }
+                }
+                connection.commit();
+            } catch (SQLException | RuntimeException failure) {
+                connection.rollback();
+                throw failure;
+            } finally {
+                connection.setAutoCommit(true);
+            }
         }
     }
 
