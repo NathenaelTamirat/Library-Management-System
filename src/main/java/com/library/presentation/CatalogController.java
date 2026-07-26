@@ -7,10 +7,12 @@ import com.library.security.AuthorizationService;
 import com.library.security.Permission;
 import com.library.service.CatalogService;
 import com.library.service.CirculationService;
+import com.library.service.FineService;
 import com.library.service.RecommendationService;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -28,6 +30,7 @@ import javafx.stage.Stage;
 public final class CatalogController {
     private final CatalogService catalog;
     private final CirculationService circulation;
+    private final FineService fines;
     private final RecommendationService recommendations;
     private final User currentUser;
     private final AuthorizationService authorization;
@@ -43,6 +46,8 @@ public final class CatalogController {
     @FXML
     private Button returnButton;
     @FXML
+    private Button finesButton;
+    @FXML
     private Button addButton;
     @FXML
     private Button editButton;
@@ -56,11 +61,13 @@ public final class CatalogController {
     public CatalogController(
             CatalogService catalog,
             CirculationService circulation,
+            FineService fines,
             RecommendationService recommendations,
             User currentUser,
             AuthorizationService authorization) {
         this.catalog = catalog;
         this.circulation = circulation;
+        this.fines = fines;
         this.recommendations = recommendations;
         this.currentUser = currentUser;
         this.authorization = authorization;
@@ -90,6 +97,10 @@ public final class CatalogController {
                         && authorization.isAllowed(currentUser.role(), Permission.BORROW_BOOK));
         returnButton.setVisible(canReturn);
         returnButton.setManaged(canReturn);
+        boolean showFines = currentUser instanceof Member
+                || authorization.isAllowed(currentUser.role(), Permission.MANAGE_LOANS);
+        finesButton.setVisible(showFines);
+        finesButton.setManaged(showFines);
         boolean catalogManager = authorization.isAllowed(
                 currentUser.role(), Permission.MANAGE_CATALOG);
         addButton.setVisible(catalogManager);
@@ -182,6 +193,26 @@ public final class CatalogController {
         }
         runMutation(returnButton, "Returning…", () ->
                 circulation.returnSelectedBook(currentUser, selected.isbn()));
+    }
+
+    @FXML
+    private void showFines() {
+        UUID memberId = currentUser.id();
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/fines.fxml"));
+            loader.setController(new FinesController(fines, currentUser, memberId, authorization));
+            Parent root = loader.load();
+            Stage dialog = new Stage();
+            dialog.initModality(Modality.APPLICATION_MODAL);
+            dialog.setTitle("Unpaid fines");
+            Scene scene = new Scene(root, 560, 420);
+            scene.getStylesheets().add(
+                    getClass().getResource("/view/library.css").toExternalForm());
+            dialog.setScene(scene);
+            dialog.showAndWait();
+        } catch (IOException failure) {
+            statusLabel.setText("Unable to open fines desk: " + failure.getMessage());
+        }
     }
 
     @FXML

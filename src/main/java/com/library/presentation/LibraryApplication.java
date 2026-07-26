@@ -91,7 +91,7 @@ public final class LibraryApplication extends Application {
             FXMLLoader loader = new FXMLLoader(
                     LibraryApplication.class.getResource("/view/catalog.fxml"));
             loader.setController(new CatalogController(
-                    catalog, circulation, recommendations, user, authorization));
+                    catalog, circulation, fines, recommendations, user, authorization));
             show(loader.load(), 900, 600);
             stage.setTitle("University Library — " + user.name() + " (" + user.role() + ")");
         } catch (IOException failure) {

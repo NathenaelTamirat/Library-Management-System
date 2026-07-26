@@ -33,6 +33,9 @@
                 <Button fx:id="returnButton"
                         text="Return selected"
                         onAction="#returnSelected"/>
+                <Button fx:id="finesButton"
+                        text="Fines"
+                        onAction="#showFines"/>
                 <Button fx:id="addButton"
                         text="Add book"
                         onAction="#addBook"/>
