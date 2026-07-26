@@ -1,7 +1,12 @@
 package com.library.presentation;
 
 import com.library.domain.Book;
+import com.library.domain.Member;
+import com.library.domain.User;
+import com.library.security.AuthorizationService;
+import com.library.security.Permission;
 import com.library.service.CatalogService;
+import com.library.service.CirculationService;
 import java.util.List;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
@@ -14,18 +19,32 @@ import javafx.scene.control.TextField;
 
 public final class CatalogController {
     private final CatalogService catalog;
+    private final CirculationService circulation;
+    private final User currentUser;
+    private final AuthorizationService authorization;
 
     @FXML
     private TextField searchField;
     @FXML
     private Button searchButton;
     @FXML
+    private Button borrowButton;
+    @FXML
+    private Button deleteButton;
+    @FXML
     private ListView<Book> resultsList;
     @FXML
     private Label statusLabel;
 
-    public CatalogController(CatalogService catalog) {
+    public CatalogController(
+            CatalogService catalog,
+            CirculationService circulation,
+            User currentUser,
+            AuthorizationService authorization) {
         this.catalog = catalog;
+        this.circulation = circulation;
+        this.currentUser = currentUser;
+        this.authorization = authorization;
     }
 
     @FXML
@@ -41,6 +60,14 @@ public final class CatalogController {
             }
         });
         searchField.setOnAction(ignored -> search());
+        boolean member = currentUser instanceof Member
+                && authorization.isAllowed(currentUser.role(), Permission.BORROW_BOOK);
+        borrowButton.setVisible(member);
+        borrowButton.setManaged(member);
+        boolean catalogManager = authorization.isAllowed(
+                currentUser.role(), Permission.MANAGE_CATALOG);
+        deleteButton.setVisible(catalogManager);
+        deleteButton.setManaged(catalogManager);
     }
 
     @FXML
@@ -64,6 +91,46 @@ public final class CatalogController {
         worker.start();
     }
 
+    @FXML
+    private void borrowSelected() {
+        Book selected = resultsList.getSelectionModel().getSelectedItem();
+        if (selected == null || !(currentUser instanceof Member member)) {
+            statusLabel.setText("Select a book to borrow");
+            return;
+        }
+        runMutation(borrowButton, "Checking out…", () ->
+                circulation.checkout(member, selected.isbn()));
+    }
+
+    @FXML
+    private void deleteSelected() {
+        Book selected = resultsList.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            statusLabel.setText("Select a book to delete");
+            return;
+        }
+        runMutation(deleteButton, "Deleting…", () ->
+                catalog.delete(currentUser, selected.isbn()));
+    }
+
+    private void runMutation(Button source, String message, CheckedOperation operation) {
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                operation.run();
+                return null;
+            }
+        };
+        source.disableProperty().bind(task.runningProperty());
+        statusLabel.setText(message);
+        task.setOnSucceeded(ignored -> search());
+        task.setOnFailed(ignored ->
+                statusLabel.setText("Operation failed: " + task.getException().getMessage()));
+        Thread worker = new Thread(task, "catalog-mutation");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
     Task<List<Book>> createSearchTask(String query) {
         return new Task<>() {
             @Override
@@ -72,5 +139,10 @@ public final class CatalogController {
                 return catalog.search(query);
             }
         };
+    }
+
+    @FunctionalInterface
+    private interface CheckedOperation {
+        void run() throws Exception;
     }
 }

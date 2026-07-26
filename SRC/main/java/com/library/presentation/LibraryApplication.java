@@ -2,13 +2,17 @@ package com.library.presentation;
 
 import com.library.data.DataSourceFactory;
 import com.library.data.JdbcBookRepository;
+import com.library.data.JdbcLoanTransactionManager;
 import com.library.data.JdbcUserLookup;
 import com.library.domain.User;
 import com.library.security.Argon2PasswordHasher;
 import com.library.security.AuthenticationService;
+import com.library.security.AuthorizationService;
 import com.library.service.CatalogService;
+import com.library.service.CirculationService;
 import com.zaxxer.hikari.HikariDataSource;
 import java.io.IOException;
+import java.time.Clock;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -19,6 +23,8 @@ public final class LibraryApplication extends Application {
     private HikariDataSource dataSource;
     private Stage stage;
     private CatalogService catalog;
+    private CirculationService circulation;
+    private AuthorizationService authorization;
 
     @Override
     public void start(Stage stage) throws IOException {
@@ -29,7 +35,13 @@ public final class LibraryApplication extends Application {
                 requiredEnvironment("LIBRARY_DB_PASSWORD"),
                 Integer.parseInt(System.getenv().getOrDefault("LIBRARY_DB_POOL_SIZE", "10")));
         dataSource = DataSourceFactory.create(config);
-        catalog = new CatalogService(new JdbcBookRepository(dataSource));
+        authorization = new AuthorizationService();
+        catalog = new CatalogService(new JdbcBookRepository(dataSource), authorization);
+        circulation = new CirculationService(
+                new JdbcLoanTransactionManager(dataSource),
+                authorization,
+                Clock.systemDefaultZone(),
+                14);
         AuthenticationService authentication = new AuthenticationService(
                 new JdbcUserLookup(dataSource, 5),
                 new Argon2PasswordHasher());
@@ -45,7 +57,8 @@ public final class LibraryApplication extends Application {
         try {
             FXMLLoader loader = new FXMLLoader(
                     LibraryApplication.class.getResource("/view/catalog.fxml"));
-            loader.setController(new CatalogController(catalog));
+            loader.setController(new CatalogController(
+                    catalog, circulation, user, authorization));
             show(loader.load(), 900, 600);
             stage.setTitle("University Library — " + user.name() + " (" + user.role() + ")");
         } catch (IOException failure) {

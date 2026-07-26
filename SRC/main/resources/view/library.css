@@ -27,6 +27,11 @@
     -fx-background-radius: 6px;
 }
 
+.danger-button {
+    -fx-background-color: #b33a3a;
+    -fx-text-fill: white;
+}
+
 .list-view {
     -fx-background-color: white;
     -fx-border-color: #d8e0e8;

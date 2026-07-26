@@ -24,6 +24,13 @@
                         text="Search"
                         defaultButton="true"
                         onAction="#search"/>
+                <Button fx:id="borrowButton"
+                        text="Borrow selected"
+                        onAction="#borrowSelected"/>
+                <Button fx:id="deleteButton"
+                        text="Delete selected"
+                        styleClass="danger-button"
+                        onAction="#deleteSelected"/>
             </HBox>
         </VBox>
     </top>
