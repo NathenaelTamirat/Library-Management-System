@@ -74,27 +74,31 @@ class PresentationContractTest {
 
         assertEquals("BorderPane", document.getDocumentElement().getNodeName());
         assertEquals(1, document.getElementsByTagName("TextField").getLength());
-        assertEquals(6, document.getElementsByTagName("Button").getLength());
+        assertEquals(7, document.getElementsByTagName("Button").getLength());
         assertEquals("#search",
                 document.getElementsByTagName("Button").item(0)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#borrowSelected",
+        assertEquals("#showRecommendations",
                 document.getElementsByTagName("Button").item(1)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#returnSelected",
+        assertEquals("#borrowSelected",
                 document.getElementsByTagName("Button").item(2)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#addBook",
+        assertEquals("#returnSelected",
                 document.getElementsByTagName("Button").item(3)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#editSelected",
+        assertEquals("#addBook",
                 document.getElementsByTagName("Button").item(4)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#deleteSelected",
+        assertEquals("#editSelected",
                 document.getElementsByTagName("Button").item(5)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
+        assertEquals("#deleteSelected",
+                document.getElementsByTagName("Button").item(6)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
         assertNotNull(getClass().getResource("/view/library.css"));
         assertNotNull(getClass().getResource("/view/book-editor.fxml"));
+        assertNotNull(getClass().getResource("/view/recommendations.fxml"));
     }
 
     @Test
@@ -105,6 +109,24 @@ class PresentationContractTest {
         assertEquals(3, document.getElementsByTagName("TextField").getLength());
         assertEquals("#save",
                 document.getElementsByTagName("Button").item(0)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
+    }
+
+    @Test
+    void recommendationsFxmlWiresRefreshBorrowAndCloseActions() throws Exception {
+        Document document = parse("/view/recommendations.fxml");
+
+        assertEquals("VBox", document.getDocumentElement().getNodeName());
+        assertEquals(1, document.getElementsByTagName("ListView").getLength());
+        assertEquals(3, document.getElementsByTagName("Button").getLength());
+        assertEquals("#refresh",
+                document.getElementsByTagName("Button").item(0)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
+        assertEquals("#borrowSelected",
+                document.getElementsByTagName("Button").item(1)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
+        assertEquals("#close",
+                document.getElementsByTagName("Button").item(2)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
     }
 

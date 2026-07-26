@@ -76,3 +76,16 @@
     -fx-font-weight: bold;
     -fx-text-fill: #17324d;
 }
+
+.recommendations-panel {
+    -fx-background-color: #f4f7fb;
+}
+
+.recommendations-subtitle {
+    -fx-text-fill: #506275;
+}
+
+.recommendations-panel .list-cell {
+    -fx-padding: 14px;
+    -fx-line-spacing: 4px;
+}

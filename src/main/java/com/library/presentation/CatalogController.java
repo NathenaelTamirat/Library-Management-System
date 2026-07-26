@@ -7,6 +7,7 @@ import com.library.security.AuthorizationService;
 import com.library.security.Permission;
 import com.library.service.CatalogService;
 import com.library.service.CirculationService;
+import com.library.service.RecommendationService;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +28,7 @@ import javafx.stage.Stage;
 public final class CatalogController {
     private final CatalogService catalog;
     private final CirculationService circulation;
+    private final RecommendationService recommendations;
     private final User currentUser;
     private final AuthorizationService authorization;
 
@@ -34,6 +36,8 @@ public final class CatalogController {
     private TextField searchField;
     @FXML
     private Button searchButton;
+    @FXML
+    private Button recommendationsButton;
     @FXML
     private Button borrowButton;
     @FXML
@@ -52,10 +56,12 @@ public final class CatalogController {
     public CatalogController(
             CatalogService catalog,
             CirculationService circulation,
+            RecommendationService recommendations,
             User currentUser,
             AuthorizationService authorization) {
         this.catalog = catalog;
         this.circulation = circulation;
+        this.recommendations = recommendations;
         this.currentUser = currentUser;
         this.authorization = authorization;
     }
@@ -75,6 +81,8 @@ public final class CatalogController {
         searchField.setOnAction(ignored -> search());
         boolean member = currentUser instanceof Member
                 && authorization.isAllowed(currentUser.role(), Permission.BORROW_BOOK);
+        recommendationsButton.setVisible(member);
+        recommendationsButton.setManaged(member);
         borrowButton.setVisible(member);
         borrowButton.setManaged(member);
         boolean canReturn = authorization.isAllowed(currentUser.role(), Permission.MANAGE_LOANS)
@@ -111,6 +119,32 @@ public final class CatalogController {
         Thread worker = new Thread(searchTask, "catalog-search");
         worker.setDaemon(true);
         worker.start();
+    }
+
+    @FXML
+    private void showRecommendations() {
+        if (!(currentUser instanceof Member member)) {
+            statusLabel.setText("Recommendations are available to members");
+            return;
+        }
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/view/recommendations.fxml"));
+            loader.setController(new RecommendationController(
+                    recommendations, circulation, member));
+            Parent root = loader.load();
+            Stage dialog = new Stage();
+            dialog.initModality(Modality.APPLICATION_MODAL);
+            dialog.setTitle("Recommended for " + member.name());
+            Scene scene = new Scene(root, 680, 520);
+            scene.getStylesheets().add(
+                    getClass().getResource("/view/library.css").toExternalForm());
+            dialog.setScene(scene);
+            dialog.showAndWait();
+            search();
+        } catch (IOException failure) {
+            statusLabel.setText("Unable to open recommendations: " + failure.getMessage());
+        }
     }
 
     @FXML

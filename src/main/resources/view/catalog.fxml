@@ -24,6 +24,9 @@
                         text="Search"
                         defaultButton="true"
                         onAction="#search"/>
+                <Button fx:id="recommendationsButton"
+                        text="For you"
+                        onAction="#showRecommendations"/>
                 <Button fx:id="borrowButton"
                         text="Borrow selected"
                         onAction="#borrowSelected"/>

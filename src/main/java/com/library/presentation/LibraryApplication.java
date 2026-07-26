@@ -5,6 +5,7 @@ import com.library.data.JdbcAuditRepository;
 import com.library.data.JdbcBookRepository;
 import com.library.data.JdbcFineRepository;
 import com.library.data.JdbcLoanTransactionManager;
+import com.library.data.JdbcRecommendationRepository;
 import com.library.data.JdbcUserLookup;
 import com.library.domain.User;
 import com.library.security.Argon2PasswordHasher;
@@ -14,6 +15,7 @@ import com.library.service.AuditService;
 import com.library.service.CatalogService;
 import com.library.service.CirculationService;
 import com.library.service.FineService;
+import com.library.service.RecommendationService;
 import com.zaxxer.hikari.HikariDataSource;
 import java.io.IOException;
 import java.time.Clock;
@@ -29,6 +31,7 @@ public final class LibraryApplication extends Application {
     private CatalogService catalog;
     private CirculationService circulation;
     private FineService fines;
+    private RecommendationService recommendations;
     private AuthorizationService authorization;
 
     @Override
@@ -50,6 +53,8 @@ public final class LibraryApplication extends Application {
                 Clock.systemDefaultZone(),
                 14);
         fines = new FineService(new JdbcFineRepository(dataSource), authorization, audit);
+        recommendations = new RecommendationService(
+                new JdbcRecommendationRepository(dataSource), authorization);
         AuthenticationService authentication = new AuthenticationService(
                 new JdbcUserLookup(dataSource, 5),
                 new Argon2PasswordHasher());
@@ -66,7 +71,7 @@ public final class LibraryApplication extends Application {
             FXMLLoader loader = new FXMLLoader(
                     LibraryApplication.class.getResource("/view/catalog.fxml"));
             loader.setController(new CatalogController(
-                    catalog, circulation, user, authorization));
+                    catalog, circulation, recommendations, user, authorization));
             show(loader.load(), 900, 600);
             stage.setTitle("University Library — " + user.name() + " (" + user.role() + ")");
         } catch (IOException failure) {
