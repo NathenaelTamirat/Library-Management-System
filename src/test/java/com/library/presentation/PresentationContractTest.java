@@ -136,7 +136,7 @@ class PresentationContractTest {
     @Test
     void auditLogFxmlWiresFilterAndRefreshActions() throws Exception {
         Document document = parse("/view/audit-log.fxml");
-        assertEquals(1, document.getElementsByTagName("TextField").getLength());
+        assertEquals(2, document.getElementsByTagName("TextField").getLength());
         assertEquals(2, document.getElementsByTagName("Button").getLength());
         assertEquals("#refresh",
                 document.getElementsByTagName("Button").item(0)

@@ -17,6 +17,8 @@
     <HBox spacing="10">
         <TextField fx:id="actionFilter" promptText="Action (optional)"
                    accessibleText="Filter audit log by action" HBox.hgrow="ALWAYS"/>
+        <TextField fx:id="userFilter" promptText="User ID (optional)"
+                   accessibleText="Filter audit log by user id" HBox.hgrow="ALWAYS"/>
         <Button fx:id="refreshButton" text="_Refresh" mnemonicParsing="true"
                 accessibleText="Refresh audit log" onAction="#refresh"/>
     </HBox>

@@ -4,6 +4,7 @@ import com.library.domain.AuditEntry;
 import com.library.domain.User;
 import com.library.service.AuditService;
 import java.util.List;
+import java.util.UUID;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -22,6 +23,8 @@ public final class AuditLogController {
 
     @FXML
     private TextField actionFilter;
+    @FXML
+    private TextField userFilter;
     @FXML
     private ListView<AuditEntry> entriesList;
     @FXML
@@ -50,15 +53,27 @@ public final class AuditLogController {
             }
         });
         actionFilter.setOnAction(ignored -> refresh());
+        userFilter.setOnAction(ignored -> refresh());
         refresh();
     }
 
     @FXML
     private void refresh() {
         String action = actionFilter.getText() == null ? "" : actionFilter.getText().strip();
+        String userText = userFilter.getText() == null ? "" : userFilter.getText().strip();
         Task<List<AuditEntry>> task = new Task<>() {
             @Override
             protected List<AuditEntry> call() throws Exception {
+                if (!userText.isBlank()) {
+                    UUID userId = UUID.fromString(userText);
+                    List<AuditEntry> entries = audits.byUser(actor, userId, LIMIT);
+                    if (action.isBlank()) {
+                        return entries;
+                    }
+                    return entries.stream()
+                            .filter(entry -> entry.action().equalsIgnoreCase(action))
+                            .toList();
+                }
                 if (action.isBlank()) {
                     return audits.recent(actor, LIMIT);
                 }
