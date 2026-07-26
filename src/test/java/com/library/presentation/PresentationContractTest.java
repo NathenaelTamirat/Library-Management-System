@@ -79,7 +79,7 @@ class PresentationContractTest {
         assertEquals(1, document.getElementsByTagName("TextField").getLength());
         assertEquals(1, document.getElementsByTagName("TableView").getLength());
         assertEquals(4, document.getElementsByTagName("TableColumn").getLength());
-        assertEquals(10, document.getElementsByTagName("Button").getLength());
+        assertEquals(11, document.getElementsByTagName("Button").getLength());
         assertEquals("#search",
                 document.getElementsByTagName("Button").item(0)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
@@ -98,23 +98,39 @@ class PresentationContractTest {
         assertEquals("#showMyLoans",
                 document.getElementsByTagName("Button").item(5)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#addBook",
+        assertEquals("#showOverdueLoans",
                 document.getElementsByTagName("Button").item(6)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#editSelected",
+        assertEquals("#addBook",
                 document.getElementsByTagName("Button").item(7)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#deleteSelected",
+        assertEquals("#editSelected",
                 document.getElementsByTagName("Button").item(8)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#signOut",
+        assertEquals("#deleteSelected",
                 document.getElementsByTagName("Button").item(9)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
+        assertEquals("#signOut",
+                document.getElementsByTagName("Button").item(10)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
         assertNotNull(getClass().getResource("/view/library.css"));
         assertNotNull(getClass().getResource("/view/book-editor.fxml"));
         assertNotNull(getClass().getResource("/view/recommendations.fxml"));
         assertNotNull(getClass().getResource("/view/fines.fxml"));
         assertNotNull(getClass().getResource("/view/my-loans.fxml"));
+        assertNotNull(getClass().getResource("/view/overdue-loans.fxml"));
+    }
+
+    @Test
+    void overdueLoansFxmlWiresRefreshAndReconcileActions() throws Exception {
+        Document document = parse("/view/overdue-loans.fxml");
+        assertEquals(3, document.getElementsByTagName("Button").getLength());
+        assertEquals("#refresh",
+                document.getElementsByTagName("Button").item(0)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
+        assertEquals("#reconcile",
+                document.getElementsByTagName("Button").item(1)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
     }
 
     @Test

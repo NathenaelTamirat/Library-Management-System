@@ -57,6 +57,8 @@ public final class CatalogController {
     @FXML
     private Button myLoansButton;
     @FXML
+    private Button overdueButton;
+    @FXML
     private Button addButton;
     @FXML
     private Button editButton;
@@ -126,6 +128,9 @@ public final class CatalogController {
                 || authorization.isAllowed(currentUser.role(), Permission.MANAGE_LOANS);
         myLoansButton.setVisible(showMyLoans);
         myLoansButton.setManaged(showMyLoans);
+        boolean manageLoans = authorization.isAllowed(currentUser.role(), Permission.MANAGE_LOANS);
+        overdueButton.setVisible(manageLoans);
+        overdueButton.setManaged(manageLoans);
         boolean catalogManager = authorization.isAllowed(
                 currentUser.role(), Permission.MANAGE_CATALOG);
         addButton.setVisible(catalogManager);
@@ -321,6 +326,25 @@ public final class CatalogController {
             search();
         } catch (IOException failure) {
             statusLabel.setText("Unable to open loans desk: " + failure.getMessage());
+        }
+    }
+
+    @FXML
+    private void showOverdueLoans() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/overdue-loans.fxml"));
+            loader.setController(new OverdueLoansController(circulation, currentUser));
+            Parent root = loader.load();
+            Stage dialog = new Stage();
+            dialog.initModality(Modality.APPLICATION_MODAL);
+            dialog.setTitle("Overdue loans");
+            Scene scene = new Scene(root, 680, 480);
+            scene.getStylesheets().add(
+                    getClass().getResource("/view/library.css").toExternalForm());
+            dialog.setScene(scene);
+            dialog.showAndWait();
+        } catch (IOException failure) {
+            statusLabel.setText("Unable to open overdue report: " + failure.getMessage());
         }
     }
 

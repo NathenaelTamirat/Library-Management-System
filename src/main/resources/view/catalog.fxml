@@ -54,6 +54,11 @@
                         mnemonicParsing="true"
                         accessibleText="Open my loans"
                         onAction="#showMyLoans"/>
+                <Button fx:id="overdueButton"
+                        text="Over_due"
+                        mnemonicParsing="true"
+                        accessibleText="Open overdue loans report"
+                        onAction="#showOverdueLoans"/>
                 <Button fx:id="addButton"
                         text="_Add book"
                         mnemonicParsing="true"
