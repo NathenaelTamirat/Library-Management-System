@@ -78,4 +78,16 @@ public final class UserAdminService {
         authorization.require(actor.role(), Permission.MANAGE_USERS);
         return users.listUsers();
     }
+
+    public void resetPassword(User actor, UUID userId, char[] temporaryPassword)
+            throws SQLException {
+        authorization.require(actor.role(), Permission.MANAGE_USERS);
+        if (users.findRecordById(userId).isEmpty()) {
+            throw new IllegalStateException("User not found: " + userId);
+        }
+        String hash = passwordHasher.hash(temporaryPassword);
+        users.updatePasswordHash(userId, hash);
+        users.clearFailedLogins(userId);
+        audit.record(actor.id(), "RESET_PASSWORD", "{\"userId\":\"" + userId + "\"}");
+    }
 }

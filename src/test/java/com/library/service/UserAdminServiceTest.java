@@ -69,6 +69,39 @@ class UserAdminServiceTest {
         assertEquals(List.of("DEACTIVATE_USER", "CHANGE_ROLE"), audits.actions);
     }
 
+    @Test
+    void adminCanResetPasswordAndClearLockout() throws Exception {
+        RecordingUsers users = new RecordingUsers();
+        RecordingAudit audits = new RecordingAudit();
+        UserAdminService admin = new UserAdminService(
+                users, new RecordingHasher(), new AuthorizationService(), new AuditService(audits));
+        Librarian actor = new Librarian(
+                UUID.randomUUID(), "Admin", "admin@example.edu", "hash", "A1", true);
+        UUID target = UUID.randomUUID();
+        users.records.put(target, new UserAdminRepository.UserRecord(
+                target, "Ada", "ada@example.edu", "old", Role.MEMBER, true, 5, Instant.now()));
+
+        admin.resetPassword(actor, target, "temporary-pass".toCharArray());
+
+        assertEquals("HASHED", users.resetHashes.get(target));
+        assertTrue(users.clearedFailures.contains(target));
+        assertEquals(List.of("RESET_PASSWORD"), audits.actions);
+    }
+
+    @Test
+    void membersCannotResetPasswords() {
+        UserAdminService admin = new UserAdminService(
+                new RecordingUsers(),
+                new RecordingHasher(),
+                new AuthorizationService(),
+                new AuditService(new RecordingAudit()));
+        Member member = new Member(UUID.randomUUID(), "Ada", "ada@example.edu", "hash", 5);
+
+        assertThrows(
+                SecurityException.class,
+                () -> admin.resetPassword(member, UUID.randomUUID(), "x".toCharArray()));
+    }
+
     private static final class RecordingAudit implements com.library.data.AuditRepository {
         private final List<String> actions = new ArrayList<>();
 
@@ -112,6 +145,9 @@ class UserAdminServiceTest {
         private Role createdRole;
         private final Map<UUID, Boolean> activeStates = new HashMap<>();
         private final Map<UUID, Role> roles = new HashMap<>();
+        private final Map<UUID, String> resetHashes = new HashMap<>();
+        private final List<UUID> clearedFailures = new ArrayList<>();
+        private final Map<UUID, UserRecord> records = new HashMap<>();
 
         @Override
         public UUID create(String name, String email, String passwordHash, Role role) {
@@ -134,6 +170,7 @@ class UserAdminServiceTest {
 
         @Override
         public void updatePasswordHash(UUID userId, String passwordHash) {
+            resetHashes.put(userId, passwordHash);
         }
 
         @Override
@@ -142,6 +179,7 @@ class UserAdminServiceTest {
 
         @Override
         public void clearFailedLogins(UUID userId) {
+            clearedFailures.add(userId);
         }
 
         @Override
@@ -151,7 +189,7 @@ class UserAdminServiceTest {
 
         @Override
         public Optional<UserRecord> findRecordById(UUID userId) {
-            return Optional.empty();
+            return Optional.ofNullable(records.get(userId));
         }
 
         @Override
