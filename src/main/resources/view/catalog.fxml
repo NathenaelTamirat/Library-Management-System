@@ -39,6 +39,11 @@
                         mnemonicParsing="true"
                         accessibleText="Borrow selected book"
                         onAction="#borrowSelected"/>
+                <Button fx:id="staffCheckoutButton"
+                        text="Staff c_heckout"
+                        mnemonicParsing="true"
+                        accessibleText="Checkout selected book for a member"
+                        onAction="#staffCheckoutSelected"/>
                 <Button fx:id="returnButton"
                         text="_Return selected"
                         mnemonicParsing="true"

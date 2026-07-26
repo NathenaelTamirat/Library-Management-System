@@ -59,6 +59,8 @@ public final class CatalogController {
     @FXML
     private Button borrowButton;
     @FXML
+    private Button staffCheckoutButton;
+    @FXML
     private Button returnButton;
     @FXML
     private Button finesButton;
@@ -137,20 +139,22 @@ public final class CatalogController {
         recommendationsButton.setManaged(member);
         borrowButton.setVisible(member);
         borrowButton.setManaged(member);
-        boolean canReturn = authorization.isAllowed(currentUser.role(), Permission.MANAGE_LOANS)
+        boolean manageLoans = authorization.isAllowed(currentUser.role(), Permission.MANAGE_LOANS);
+        staffCheckoutButton.setVisible(manageLoans);
+        staffCheckoutButton.setManaged(manageLoans);
+        boolean canReturn = manageLoans
                 || (currentUser instanceof Member
                         && authorization.isAllowed(currentUser.role(), Permission.BORROW_BOOK));
         returnButton.setVisible(canReturn);
         returnButton.setManaged(canReturn);
         boolean showFines = currentUser instanceof Member
-                || authorization.isAllowed(currentUser.role(), Permission.MANAGE_LOANS);
+                || manageLoans;
         finesButton.setVisible(showFines);
         finesButton.setManaged(showFines);
         boolean showMyLoans = currentUser instanceof Member
-                || authorization.isAllowed(currentUser.role(), Permission.MANAGE_LOANS);
+                || manageLoans;
         myLoansButton.setVisible(showMyLoans);
         myLoansButton.setManaged(showMyLoans);
-        boolean manageLoans = authorization.isAllowed(currentUser.role(), Permission.MANAGE_LOANS);
         overdueButton.setVisible(manageLoans);
         overdueButton.setManaged(manageLoans);
         boolean viewAudit = authorization.isAllowed(currentUser.role(), Permission.VIEW_AUDIT_LOG);
@@ -242,6 +246,49 @@ public final class CatalogController {
         task.setOnFailed(ignored ->
                 statusLabel.setText("Operation failed: " + task.getException().getMessage()));
         Thread worker = new Thread(task, "catalog-checkout");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    @FXML
+    private void staffCheckoutSelected() {
+        Book selected = selectedBook();
+        if (selected == null) {
+            statusLabel.setText("Select a book for staff checkout");
+            return;
+        }
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Staff checkout");
+        dialog.setHeaderText("Member email for " + selected.title());
+        dialog.setContentText("Email");
+        Optional<String> email = dialog.showAndWait();
+        Optional<UUID> memberId = MemberLookupSupport.resolveMemberId(
+                currentUser, authorization, userLookup, email);
+        if (memberId.isEmpty()) {
+            statusLabel.setText("Staff checkout: member not found or cancelled");
+            return;
+        }
+        Optional<User> memberUser = userLookup.findByEmail(email.orElseThrow().strip().toLowerCase());
+        if (memberUser.isEmpty() || !(memberUser.orElseThrow() instanceof Member member)) {
+            statusLabel.setText("Staff checkout requires an active member account");
+            return;
+        }
+        Task<Loan> task = new Task<>() {
+            @Override
+            protected Loan call() throws Exception {
+                return circulation.checkoutFor(currentUser, member, selected.isbn());
+            }
+        };
+        staffCheckoutButton.disableProperty().bind(task.runningProperty());
+        statusLabel.setText("Checking out for member…");
+        task.setOnSucceeded(ignored -> {
+            showCheckoutSuccess(task.getValue());
+            search();
+        });
+        task.setOnFailed(ignored ->
+                statusLabel.setText("Staff checkout failed: "
+                        + task.getException().getMessage()));
+        Thread worker = new Thread(task, "staff-checkout");
         worker.setDaemon(true);
         worker.start();
     }
