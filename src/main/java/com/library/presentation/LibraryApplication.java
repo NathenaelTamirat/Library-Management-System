@@ -63,11 +63,14 @@ public final class LibraryApplication extends Application {
         recommendations = new RecommendationService(
                 new JdbcRecommendationRepository(dataSource), authorization);
         Argon2PasswordHasher passwordHasher = new Argon2PasswordHasher();
+        JdbcUserAdminRepository userAccounts = new JdbcUserAdminRepository(dataSource);
         AuthenticationService authentication = new AuthenticationService(
                 new JdbcUserLookup(dataSource, 5),
-                passwordHasher);
+                userAccounts,
+                passwordHasher,
+                Clock.systemUTC());
         userAdmin = new UserAdminService(
-                new JdbcUserAdminRepository(dataSource),
+                userAccounts,
                 passwordHasher,
                 authorization,
                 audit);
