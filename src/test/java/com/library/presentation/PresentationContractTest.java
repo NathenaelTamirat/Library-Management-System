@@ -154,7 +154,25 @@ class PresentationContractTest {
     }
 
     private static AuditService silentAudit() {
-        return new AuditService((userId, action, details) -> {
+        return new AuditService(new com.library.data.AuditRepository() {
+            @Override
+            public void record(Optional<UUID> userId, String action, String details) {
+            }
+
+            @Override
+            public java.util.List<com.library.domain.AuditEntry> findRecent(int limit) {
+                return java.util.List.of();
+            }
+
+            @Override
+            public java.util.List<com.library.domain.AuditEntry> findByAction(String action, int limit) {
+                return java.util.List.of();
+            }
+
+            @Override
+            public java.util.List<com.library.domain.AuditEntry> findByUser(UUID userId, int limit) {
+                return java.util.List.of();
+            }
         });
     }
 

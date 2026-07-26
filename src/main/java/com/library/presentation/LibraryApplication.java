@@ -47,7 +47,8 @@ public final class LibraryApplication extends Application {
                 Integer.parseInt(System.getenv().getOrDefault("LIBRARY_DB_POOL_SIZE", "10")));
         dataSource = DataSourceFactory.create(config);
         authorization = new AuthorizationService();
-        AuditService audit = new AuditService(new JdbcAuditRepository(dataSource, true));
+        AuditService audit = new AuditService(
+                new JdbcAuditRepository(dataSource, true), authorization);
         JdbcLoanTransactionManager loanTransactions = new JdbcLoanTransactionManager(dataSource);
         catalog = new CatalogService(
                 new JdbcBookRepository(dataSource), loanTransactions, authorization, audit);

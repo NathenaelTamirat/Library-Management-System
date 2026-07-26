@@ -40,16 +40,21 @@ class JdbcAuditRepositoryTest {
         UUID librarian = UUID.randomUUID();
 
         audits.record(Optional.of(librarian), "DELETE_BOOK", "{\"isbn\":\"9780134685991\"}");
+        audits.record(Optional.of(librarian), "CHECKOUT", "{\"isbn\":\"9780134685991\"}");
 
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement();
              ResultSet results = statement.executeQuery(
-                     "SELECT user_id, action, details FROM audit_log")) {
+                     "SELECT user_id, action, details FROM audit_log ORDER BY id")) {
             assertTrue(results.next());
             assertEquals(librarian, results.getObject("user_id", UUID.class));
             assertEquals("DELETE_BOOK", results.getString("action"));
             assertEquals("{\"isbn\":\"9780134685991\"}", results.getString("details"));
+            assertTrue(results.next());
             assertFalse(results.next());
         }
+        assertEquals(2, audits.findRecent(10).size());
+        assertEquals("DELETE_BOOK", audits.findByAction("DELETE_BOOK", 10).get(0).action());
+        assertEquals(2, audits.findByUser(librarian, 10).size());
     }
 }

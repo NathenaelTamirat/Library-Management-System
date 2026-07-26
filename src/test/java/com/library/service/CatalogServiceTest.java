@@ -71,6 +71,21 @@ class CatalogServiceTest {
         public void record(Optional<UUID> userId, String action, String details) {
             actions.add(action);
         }
+        @Override
+        public java.util.List<com.library.domain.AuditEntry> findRecent(int limit) {
+            return java.util.List.of();
+        }
+
+        @Override
+        public java.util.List<com.library.domain.AuditEntry> findByAction(String action, int limit) {
+            return java.util.List.of();
+        }
+
+        @Override
+        public java.util.List<com.library.domain.AuditEntry> findByUser(java.util.UUID userId, int limit) {
+            return java.util.List.of();
+        }
+
     }
 
     private static final class RecordingBooks implements BookRepository {

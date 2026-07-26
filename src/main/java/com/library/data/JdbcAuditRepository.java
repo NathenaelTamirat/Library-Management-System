@@ -1,8 +1,13 @@
 package com.library.data;
 
+import com.library.domain.AuditEntry;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import javax.sql.DataSource;
@@ -15,6 +20,26 @@ public final class JdbcAuditRepository implements AuditRepository {
     private static final String INSERT_H2 = """
             INSERT INTO audit_log (user_id, action, details)
             VALUES (?, ?, ?)
+            """;
+    private static final String FIND_RECENT = """
+            SELECT id, user_id, action, occurred_at, details
+            FROM audit_log
+            ORDER BY occurred_at DESC, id DESC
+            LIMIT ?
+            """;
+    private static final String FIND_BY_ACTION = """
+            SELECT id, user_id, action, occurred_at, details
+            FROM audit_log
+            WHERE action = ?
+            ORDER BY occurred_at DESC, id DESC
+            LIMIT ?
+            """;
+    private static final String FIND_BY_USER = """
+            SELECT id, user_id, action, occurred_at, details
+            FROM audit_log
+            WHERE user_id = ?
+            ORDER BY occurred_at DESC, id DESC
+            LIMIT ?
             """;
 
     private final DataSource dataSource;
@@ -45,5 +70,56 @@ public final class JdbcAuditRepository implements AuditRepository {
             statement.setString(3, details == null || details.isBlank() ? "{}" : details);
             statement.executeUpdate();
         }
+    }
+
+    @Override
+    public List<AuditEntry> findRecent(int limit) throws SQLException {
+        return query(FIND_RECENT, null, null, limit);
+    }
+
+    @Override
+    public List<AuditEntry> findByAction(String action, int limit) throws SQLException {
+        return query(FIND_BY_ACTION, action, null, limit);
+    }
+
+    @Override
+    public List<AuditEntry> findByUser(UUID userId, int limit) throws SQLException {
+        return query(FIND_BY_USER, null, userId, limit);
+    }
+
+    private List<AuditEntry> query(String sql, String action, UUID userId, int limit)
+            throws SQLException {
+        if (limit < 1) {
+            throw new IllegalArgumentException("Limit must be positive");
+        }
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            int index = 1;
+            if (action != null) {
+                statement.setString(index++, action);
+            }
+            if (userId != null) {
+                statement.setObject(index++, userId);
+            }
+            statement.setInt(index, limit);
+            try (ResultSet results = statement.executeQuery()) {
+                List<AuditEntry> entries = new ArrayList<>();
+                while (results.next()) {
+                    entries.add(map(results));
+                }
+                return entries;
+            }
+        }
+    }
+
+    private static AuditEntry map(ResultSet results) throws SQLException {
+        UUID userId = results.getObject("user_id", UUID.class);
+        Timestamp occurred = results.getTimestamp("occurred_at");
+        return new AuditEntry(
+                results.getLong("id"),
+                Optional.ofNullable(userId),
+                results.getString("action"),
+                occurred.toInstant(),
+                results.getString("details"));
     }
 }
