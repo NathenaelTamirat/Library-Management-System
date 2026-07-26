@@ -303,6 +303,11 @@ class CirculationServiceTest {
         }
 
         @Override
+        public List<Fine> findUnpaid() {
+            return List.of();
+        }
+
+        @Override
         public void markPaid(UUID fineId) {
         }
 

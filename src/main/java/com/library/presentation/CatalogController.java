@@ -11,11 +11,14 @@ import com.library.security.Permission;
 import com.library.service.AuditService;
 import com.library.service.CatalogService;
 import com.library.service.CirculationService;
+import com.library.service.ExportService;
 import com.library.service.FineService;
 import com.library.service.LoanPolicyService;
 import com.library.service.RecommendationService;
 import com.library.service.UserAdminService;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,11 +31,13 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
+import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -46,6 +51,7 @@ public final class CatalogController {
     private final AuditService audits;
     private final UserAdminService userAdmin;
     private final LoanPolicyService loanPolicies;
+    private final ExportService exports;
     private final AuthenticationService authentication;
     private final AuthenticationService.UserLookup userLookup;
     private final User currentUser;
@@ -76,6 +82,8 @@ public final class CatalogController {
     private Button usersButton;
     @FXML
     private Button policyButton;
+    @FXML
+    private Button exportButton;
     @FXML
     private Button addButton;
     @FXML
@@ -109,6 +117,7 @@ public final class CatalogController {
             AuditService audits,
             UserAdminService userAdmin,
             LoanPolicyService loanPolicies,
+            ExportService exports,
             AuthenticationService authentication,
             AuthenticationService.UserLookup userLookup,
             User currentUser,
@@ -121,6 +130,7 @@ public final class CatalogController {
         this.audits = audits;
         this.userAdmin = userAdmin;
         this.loanPolicies = loanPolicies;
+        this.exports = exports;
         this.authentication = authentication;
         this.userLookup = userLookup;
         this.currentUser = currentUser;
@@ -173,6 +183,10 @@ public final class CatalogController {
         usersButton.setManaged(manageUsers);
         policyButton.setVisible(manageUsers);
         policyButton.setManaged(manageUsers);
+        boolean canExport = manageLoans
+                || authorization.isAllowed(currentUser.role(), Permission.MANAGE_CATALOG);
+        exportButton.setVisible(canExport);
+        exportButton.setManaged(canExport);
         boolean catalogManager = authorization.isAllowed(
                 currentUser.role(), Permission.MANAGE_CATALOG);
         addButton.setVisible(catalogManager);
@@ -563,6 +577,55 @@ public final class CatalogController {
         } catch (IOException failure) {
             statusLabel.setText("Unable to open policy settings: " + failure.getMessage());
         }
+    }
+
+    @FXML
+    private void exportCsv() {
+        ChoiceDialog<String> choice = new ChoiceDialog<>(
+                "Catalog", "Catalog", "Overdue loans", "Unpaid fines");
+        choice.setTitle("Export CSV");
+        choice.setHeaderText("Choose a report to export");
+        choice.setContentText("Report");
+        Optional<String> selected = choice.showAndWait();
+        if (selected.isEmpty()) {
+            statusLabel.setText("Export cancelled");
+            return;
+        }
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Save CSV export");
+        chooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("CSV files", "*.csv"));
+        chooser.setInitialFileName(switch (selected.orElseThrow()) {
+            case "Overdue loans" -> "overdue-loans.csv";
+            case "Unpaid fines" -> "unpaid-fines.csv";
+            default -> "catalog.csv";
+        });
+        var target = chooser.showSaveDialog(exportButton.getScene().getWindow());
+        if (target == null) {
+            statusLabel.setText("Export cancelled");
+            return;
+        }
+        String report = selected.orElseThrow();
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                String csv = switch (report) {
+                    case "Overdue loans" -> exports.overdueCsv(currentUser);
+                    case "Unpaid fines" -> exports.unpaidFinesCsv(currentUser);
+                    default -> exports.catalogCsv(currentUser);
+                };
+                Files.writeString(target.toPath(), csv, StandardCharsets.UTF_8);
+                return null;
+            }
+        };
+        exportButton.disableProperty().bind(task.runningProperty());
+        task.setOnSucceeded(ignored ->
+                statusLabel.setText("Exported " + report + " to " + target.getName()));
+        task.setOnFailed(ignored ->
+                statusLabel.setText("Export failed: " + task.getException().getMessage()));
+        Thread worker = new Thread(task, "csv-export");
+        worker.setDaemon(true);
+        worker.start();
     }
 
     @FXML

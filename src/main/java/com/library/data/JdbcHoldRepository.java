@@ -66,13 +66,17 @@ public final class JdbcHoldRepository implements HoldRepository {
     @Override
     public Hold place(UUID userId, String isbn, Instant placedAt) throws SQLException {
         UUID id = UUID.randomUUID();
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(INSERT)) {
-            statement.setObject(1, id);
-            statement.setObject(2, userId);
-            statement.setString(3, isbn);
-            statement.setTimestamp(4, Timestamp.from(placedAt));
-            statement.executeUpdate();
+        try (Connection connection = dataSource.getConnection()) {
+            if (findActiveByUserAndIsbn(connection, userId, isbn).isPresent()) {
+                throw new SQLException("Active hold already exists for user and ISBN");
+            }
+            try (PreparedStatement statement = connection.prepareStatement(INSERT)) {
+                statement.setObject(1, id);
+                statement.setObject(2, userId);
+                statement.setString(3, isbn);
+                statement.setTimestamp(4, Timestamp.from(placedAt));
+                statement.executeUpdate();
+            }
         }
         return new Hold(id, userId, isbn, placedAt);
     }
@@ -106,8 +110,14 @@ public final class JdbcHoldRepository implements HoldRepository {
 
     @Override
     public Optional<Hold> findActiveByUserAndIsbn(UUID userId, String isbn) throws SQLException {
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(FIND_ACTIVE_BY_USER_ISBN)) {
+        try (Connection connection = dataSource.getConnection()) {
+            return findActiveByUserAndIsbn(connection, userId, isbn);
+        }
+    }
+
+    private static Optional<Hold> findActiveByUserAndIsbn(
+            Connection connection, UUID userId, String isbn) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(FIND_ACTIVE_BY_USER_ISBN)) {
             statement.setObject(1, userId);
             statement.setString(2, isbn);
             try (ResultSet results = statement.executeQuery()) {

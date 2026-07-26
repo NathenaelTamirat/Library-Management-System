@@ -21,6 +21,7 @@ import com.library.service.AuditService;
 import com.library.service.CatalogService;
 import com.library.service.CirculationReportService;
 import com.library.service.CirculationService;
+import com.library.service.ExportService;
 import com.library.service.FineService;
 import com.library.service.HoldService;
 import com.library.service.LoanPolicyService;
@@ -42,6 +43,7 @@ public final class LibraryApplication extends Application {
     private CatalogService catalog;
     private CirculationService circulation;
     private CirculationReportService circulationReports;
+    private ExportService exports;
     private FineService fines;
     private RecommendationService recommendations;
     private UserAdminService userAdmin;
@@ -65,8 +67,9 @@ public final class LibraryApplication extends Application {
         audit = new AuditService(
                 new JdbcAuditRepository(dataSource, true), authorization);
         JdbcLoanTransactionManager loanTransactions = new JdbcLoanTransactionManager(dataSource);
+        JdbcBookRepository bookRepository = new JdbcBookRepository(dataSource, true);
         catalog = new CatalogService(
-                new JdbcBookRepository(dataSource, true),
+                bookRepository,
                 loanTransactions,
                 authorization,
                 audit);
@@ -95,6 +98,7 @@ public final class LibraryApplication extends Application {
                 policy.maxRenewals());
         circulationReports = new CirculationReportService(
                 new JdbcCirculationReportRepository(dataSource), authorization);
+        exports = new ExportService(bookRepository, loanTransactions, fineRepository, authorization);
         fines = new FineService(fineRepository, authorization, audit);
         recommendations = new RecommendationService(
                 new JdbcRecommendationRepository(dataSource), authorization);
@@ -139,6 +143,7 @@ public final class LibraryApplication extends Application {
                     audit,
                     userAdmin,
                     loanPolicies,
+                    exports,
                     authentication,
                     userLookup,
                     user,

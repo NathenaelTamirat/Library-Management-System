@@ -26,6 +26,12 @@ public final class JdbcFineRepository implements FineRepository {
             WHERE l.user_id = ? AND f.paid_status = FALSE AND f.waived = FALSE
             ORDER BY f.issued_date
             """;
+    private static final String FIND_UNPAID = """
+            SELECT id, loan_id, amount, paid_status, issued_date
+            FROM fines
+            WHERE paid_status = FALSE AND waived = FALSE
+            ORDER BY issued_date
+            """;
     private static final String MARK_PAID = """
             UPDATE fines
             SET paid_status = TRUE
@@ -66,6 +72,19 @@ public final class JdbcFineRepository implements FineRepository {
                 }
                 return fines;
             }
+        }
+    }
+
+    @Override
+    public List<Fine> findUnpaid() throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(FIND_UNPAID);
+             ResultSet results = statement.executeQuery()) {
+            List<Fine> fines = new ArrayList<>();
+            while (results.next()) {
+                fines.add(map(results));
+            }
+            return fines;
         }
     }
 

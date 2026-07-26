@@ -44,11 +44,6 @@ class JdbcHoldRepositoryTest {
                         expires_at TIMESTAMP
                     )
                     """);
-            statement.execute("""
-                    CREATE UNIQUE INDEX one_active_hold_per_member_book
-                    ON holds (user_id, isbn)
-                    WHERE status IN ('WAITING', 'READY')
-                    """);
             statement.execute("INSERT INTO users (id) VALUES ('" + firstUser + "')");
             statement.execute("INSERT INTO users (id) VALUES ('" + secondUser + "')");
             statement.execute(
