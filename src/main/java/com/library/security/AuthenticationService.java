@@ -8,6 +8,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Optional;
 
 public final class AuthenticationService {
@@ -39,7 +40,7 @@ public final class AuthenticationService {
             wipe(password);
             return Optional.empty();
         }
-        String normalized = email.strip().toLowerCase();
+        String normalized = email.strip().toLowerCase(Locale.ROOT);
         try {
             if (accounts != null) {
                 Optional<UserRecord> record = accounts.findRecordByEmail(normalized);

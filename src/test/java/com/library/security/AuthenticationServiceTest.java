@@ -18,6 +18,25 @@ import org.junit.jupiter.api.Test;
 
 class AuthenticationServiceTest {
     @Test
+    void normalizesEmailBeforeLookup() {
+        UUID userId = UUID.randomUUID();
+        Member member = new Member(userId, "Ada", "ada@example.edu", "HASH", 5);
+        String[] lookedUpEmail = new String[1];
+        AuthenticationService auth = new AuthenticationService(
+                email -> {
+                    lookedUpEmail[0] = email;
+                    return Optional.of(member);
+                },
+                new RecordingHasher());
+
+        Optional<User> authenticated =
+                auth.authenticate("  ADA@EXAMPLE.EDU  ", "correctpassword".toCharArray());
+
+        assertEquals(Optional.of(member), authenticated);
+        assertEquals("ada@example.edu", lookedUpEmail[0]);
+    }
+
+    @Test
     void locksAccountAfterRepeatedFailedLogins() throws Exception {
         UUID userId = UUID.randomUUID();
         Member member = new Member(userId, "Ada", "ada@example.edu", "HASH", 5);
