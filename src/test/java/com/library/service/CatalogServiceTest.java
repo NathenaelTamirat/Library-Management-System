@@ -9,6 +9,7 @@ import com.library.domain.Librarian;
 import com.library.domain.Loan;
 import com.library.domain.ReturnReceipt;
 import com.library.security.AuthorizationService;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -19,6 +20,46 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class CatalogServiceTest {
+    @Test
+    void addRejectsBlankAuthor() throws Exception {
+        RecordingBooks books = new RecordingBooks();
+        RecordingAudit audits = new RecordingAudit();
+        CatalogService catalog = new CatalogService(
+                books,
+                new RecordingLoans(),
+                new AuthorizationService(),
+                new AuditService(audits));
+        Book book = bookWithAuthor("");
+
+        IllegalArgumentException failure =
+                assertThrows(IllegalArgumentException.class, () -> catalog.add(librarian(), book));
+
+        assertEquals("Author is required", failure.getMessage());
+        assertTrue(books.stored.isEmpty());
+        assertTrue(audits.actions.isEmpty());
+    }
+
+    @Test
+    void updateRejectsWhitespaceOnlyAuthor() throws Exception {
+        RecordingBooks books = new RecordingBooks();
+        RecordingAudit audits = new RecordingAudit();
+        CatalogService catalog = new CatalogService(
+                books,
+                new RecordingLoans(),
+                new AuthorizationService(),
+                new AuditService(audits));
+        Book stored = new Book("9780134685991", "Effective Java", "Joshua Bloch", 2, 1);
+        books.save(stored);
+        Book update = bookWithAuthor(" \t\n");
+
+        IllegalArgumentException failure = assertThrows(
+                IllegalArgumentException.class, () -> catalog.update(librarian(), update));
+
+        assertEquals("Author is required", failure.getMessage());
+        assertSame(stored, books.stored.get(stored.isbn()));
+        assertTrue(audits.actions.isEmpty());
+    }
+
     @Test
     void deleteRefusesWhenOpenLoansExist() throws Exception {
         RecordingBooks books = new RecordingBooks();
@@ -62,6 +103,19 @@ class CatalogServiceTest {
         assertThrows(IllegalStateException.class, () -> catalog.update(
                 librarian,
                 new Book(book.isbn(), book.title(), book.author(), 2, 1)));
+    }
+
+    private static Librarian librarian() {
+        return new Librarian(
+                UUID.randomUUID(), "Libby", "lib@example.edu", "hash", "desk", false);
+    }
+
+    private static Book bookWithAuthor(String author) throws ReflectiveOperationException {
+        Book book = new Book("9780134685991", "Effective Java", "Joshua Bloch", 2, 1);
+        Field authorField = Book.class.getDeclaredField("author");
+        authorField.setAccessible(true);
+        authorField.set(book, author);
+        return book;
     }
 
     private static final class RecordingAudit implements com.library.data.AuditRepository {
