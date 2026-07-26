@@ -86,6 +86,27 @@ class HoldServiceTest {
         assertEquals(1, service.queueForIsbn(librarian, "9780134685991").size());
     }
 
+    @Test
+    void staffCanExpireStaleReadyHoldsUsingInjectedClock() throws Exception {
+        RecordingHolds holds = new RecordingHolds();
+        RecordingAudit audits = new RecordingAudit();
+        Clock clock = Clock.fixed(Instant.parse("2026-07-26T12:00:00Z"), ZoneOffset.UTC);
+        HoldService service = new HoldService(
+                holds, new AuthorizationService(), new AuditService(audits), clock);
+        Librarian librarian = new Librarian(
+                UUID.randomUUID(), "Lib", "lib@example.edu", "hash", "desk", false);
+
+        int expired = service.expireStale(librarian);
+
+        assertEquals(Instant.parse("2026-07-26T12:00:00Z"), holds.expiredAsOf);
+        assertEquals(1, expired);
+        assertEquals(List.of("EXPIRE_HOLDS"), audits.actions);
+        assertThrows(
+                SecurityException.class,
+                () -> service.expireStale(new Member(
+                        UUID.randomUUID(), "Ada", "ada@example.edu", "hash", 5)));
+    }
+
     private static final class RecordingAudit implements com.library.data.AuditRepository {
         private final List<String> actions = new ArrayList<>();
 
@@ -114,6 +135,7 @@ class HoldServiceTest {
         private final Map<UUID, Hold> byId = new HashMap<>();
         private final List<String> books = new ArrayList<>();
         private final List<UUID> cancelled = new ArrayList<>();
+        private Instant expiredAsOf;
 
         @Override
         public Hold place(UUID userId, String isbn, Instant placedAt) {
@@ -131,6 +153,12 @@ class HoldServiceTest {
         @Override
         public void fulfill(UUID holdId) {
             byId.get(holdId).fulfill();
+        }
+
+        @Override
+        public int expireReadyBefore(Instant asOf) {
+            expiredAsOf = asOf;
+            return 1;
         }
 
         @Override

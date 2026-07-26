@@ -79,4 +79,11 @@ public final class HoldService {
             holds.fulfill(hold.orElseThrow().id());
         }
     }
+
+    public int expireStale(User actor) throws SQLException {
+        authorization.require(actor, Permission.MANAGE_LOANS);
+        int expired = holds.expireReadyBefore(clock.instant());
+        audit.record(actor.id(), "EXPIRE_HOLDS", "{\"expired\":" + expired + "}");
+        return expired;
+    }
 }

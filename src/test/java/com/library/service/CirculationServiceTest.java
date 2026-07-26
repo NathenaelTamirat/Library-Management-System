@@ -435,6 +435,11 @@ class CirculationServiceTest {
         }
 
         @Override
+        public int expireReadyBefore(Instant asOf) {
+            return 0;
+        }
+
+        @Override
         public Optional<Hold> findById(UUID holdId) {
             return Optional.of(head);
         }

@@ -12,13 +12,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class JdbcHoldRepositoryTest {
+    private JdbcDataSource dataSource;
     private JdbcHoldRepository holds;
     private UUID firstUser;
     private UUID secondUser;
 
     @BeforeEach
     void createDatabase() throws Exception {
-        JdbcDataSource dataSource = new JdbcDataSource();
+        dataSource = new JdbcDataSource();
         dataSource.setURL("jdbc:h2:mem:holds;MODE=PostgreSQL;DB_CLOSE_DELAY=-1");
         firstUser = UUID.randomUUID();
         secondUser = UUID.randomUUID();
@@ -65,5 +66,20 @@ class JdbcHoldRepositoryTest {
 
         holds.cancel(head.id());
         assertEquals(secondUser, holds.findFirstActiveByIsbn("9780134685991").orElseThrow().userId());
+    }
+
+    @Test
+    void expireReadyBeforeMarksStaleReadyHoldsExpired() throws Exception {
+        Hold hold = holds.place(firstUser, "9780134685991", Instant.parse("2026-07-20T10:00:00Z"));
+        try (Connection connection = dataSource.getConnection();
+             Statement statement = connection.createStatement()) {
+            statement.execute(
+                    "UPDATE holds SET status = 'READY', expires_at = TIMESTAMP '2026-07-25 10:00:00'"
+                            + " WHERE id = '" + hold.id() + "'");
+        }
+
+        assertEquals(1, holds.expireReadyBefore(Instant.parse("2026-07-26T12:00:00Z")));
+        assertEquals("EXPIRED", holds.findById(hold.id()).orElseThrow().status().name());
+        assertEquals(0, holds.expireReadyBefore(Instant.parse("2026-07-26T12:00:00Z")));
     }
 }

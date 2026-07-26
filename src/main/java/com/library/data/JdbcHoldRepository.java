@@ -27,6 +27,13 @@ public final class JdbcHoldRepository implements HoldRepository {
             UPDATE holds SET status = 'FULFILLED'
             WHERE id = ? AND status IN ('WAITING', 'READY')
             """;
+    private static final String EXPIRE_READY = """
+            UPDATE holds
+            SET status = 'EXPIRED'
+            WHERE status = 'READY'
+              AND expires_at IS NOT NULL
+              AND expires_at <= ?
+            """;
     private static final String FIND_BY_ID = """
             SELECT id, user_id, isbn, status, placed_at, expires_at
             FROM holds WHERE id = ?
@@ -100,6 +107,15 @@ public final class JdbcHoldRepository implements HoldRepository {
             if (statement.executeUpdate() != 1) {
                 throw new SQLException("Hold could not be fulfilled: " + holdId);
             }
+        }
+    }
+
+    @Override
+    public int expireReadyBefore(Instant asOf) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(EXPIRE_READY)) {
+            statement.setTimestamp(1, Timestamp.from(asOf));
+            return statement.executeUpdate();
         }
     }
 
