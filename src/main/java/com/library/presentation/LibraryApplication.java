@@ -3,6 +3,7 @@ package com.library.presentation;
 import com.library.data.DataSourceFactory;
 import com.library.data.JdbcAuditRepository;
 import com.library.data.JdbcBookRepository;
+import com.library.data.JdbcCirculationReportRepository;
 import com.library.data.JdbcFineRepository;
 import com.library.data.JdbcHoldRepository;
 import com.library.data.JdbcLoanPolicyRepository;
@@ -18,6 +19,7 @@ import com.library.security.AuthorizationService;
 import com.library.security.SessionGuard;
 import com.library.service.AuditService;
 import com.library.service.CatalogService;
+import com.library.service.CirculationReportService;
 import com.library.service.CirculationService;
 import com.library.service.FineService;
 import com.library.service.HoldService;
@@ -39,6 +41,7 @@ public final class LibraryApplication extends Application {
     private Stage stage;
     private CatalogService catalog;
     private CirculationService circulation;
+    private CirculationReportService circulationReports;
     private FineService fines;
     private RecommendationService recommendations;
     private UserAdminService userAdmin;
@@ -89,6 +92,8 @@ public final class LibraryApplication extends Application {
                 Clock.systemDefaultZone(),
                 policy.loanDays(),
                 policy.maxRenewals());
+        circulationReports = new CirculationReportService(
+                new JdbcCirculationReportRepository(dataSource), authorization);
         fines = new FineService(fineRepository, authorization, audit);
         recommendations = new RecommendationService(
                 new JdbcRecommendationRepository(dataSource), authorization);
