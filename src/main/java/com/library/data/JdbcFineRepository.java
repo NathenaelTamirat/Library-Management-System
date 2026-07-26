@@ -23,13 +23,18 @@ public final class JdbcFineRepository implements FineRepository {
             SELECT f.id, f.loan_id, f.amount, f.paid_status, f.issued_date
             FROM fines f
             INNER JOIN loans l ON l.id = f.loan_id
-            WHERE l.user_id = ? AND f.paid_status = FALSE
+            WHERE l.user_id = ? AND f.paid_status = FALSE AND f.waived = FALSE
             ORDER BY f.issued_date
             """;
     private static final String MARK_PAID = """
             UPDATE fines
             SET paid_status = TRUE
-            WHERE id = ? AND paid_status = FALSE
+            WHERE id = ? AND paid_status = FALSE AND waived = FALSE
+            """;
+    private static final String WAIVE = """
+            UPDATE fines
+            SET waived = TRUE
+            WHERE id = ? AND paid_status = FALSE AND waived = FALSE
             """;
 
     private final DataSource dataSource;
@@ -70,7 +75,18 @@ public final class JdbcFineRepository implements FineRepository {
              PreparedStatement statement = connection.prepareStatement(MARK_PAID)) {
             statement.setObject(1, fineId);
             if (statement.executeUpdate() != 1) {
-                throw new SQLException("Fine not found or already paid: " + fineId);
+                throw new SQLException("Fine not found or already settled: " + fineId);
+            }
+        }
+    }
+
+    @Override
+    public void waive(UUID fineId) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(WAIVE)) {
+            statement.setObject(1, fineId);
+            if (statement.executeUpdate() != 1) {
+                throw new SQLException("Fine not found or already settled: " + fineId);
             }
         }
     }

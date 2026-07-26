@@ -286,6 +286,10 @@ class CirculationServiceTest {
         @Override
         public void markPaid(UUID fineId) {
         }
+
+        @Override
+        public void waive(UUID fineId) {
+        }
     }
 
     private static final class RecordingTransactions implements LoanTransactionManager {

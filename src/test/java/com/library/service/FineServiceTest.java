@@ -37,9 +37,28 @@ class FineServiceTest {
         assertEquals("PAY_FINE", audits.actions.get(0));
     }
 
+    @Test
+    void staffCanWaiveFinesButMembersCannot() throws Exception {
+        RecordingFines repository = new RecordingFines();
+        RecordingAudits audits = new RecordingAudits();
+        FineService service = new FineService(
+                repository, new AuthorizationService(), new AuditService(audits));
+        Member member = new Member(UUID.randomUUID(), "Ada", "ada@example.edu", "hash", 5);
+        Librarian librarian = new Librarian(
+                UUID.randomUUID(), "Lib", "lib@example.edu", "hash", "AUD-1", false);
+        Fine fine = new Fine(
+                UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("4.00"), false, LocalDate.now());
+
+        assertThrows(SecurityException.class, () -> service.waive(member, fine.id()));
+        service.waive(librarian, fine.id());
+        assertEquals(fine.id(), repository.waivedFineId);
+        assertEquals("WAIVE_FINE", audits.actions.get(0));
+    }
+
     private static final class RecordingFines implements FineRepository {
         private final java.util.Map<UUID, List<Fine>> unpaid = new java.util.HashMap<>();
         private UUID paidFineId;
+        private UUID waivedFineId;
 
         @Override
         public Optional<Fine> findByLoanId(UUID loanId) {
@@ -54,6 +73,11 @@ class FineServiceTest {
         @Override
         public void markPaid(UUID fineId) {
             paidFineId = fineId;
+        }
+
+        @Override
+        public void waive(UUID fineId) {
+            waivedFineId = fineId;
         }
     }
 

@@ -45,6 +45,7 @@ class JdbcFineRepositoryTest {
                         loan_id UUID NOT NULL UNIQUE REFERENCES loans(id),
                         amount DECIMAL(12, 2) NOT NULL,
                         paid_status BOOLEAN NOT NULL,
+                        waived BOOLEAN NOT NULL DEFAULT FALSE,
                         issued_date DATE NOT NULL
                     )
                     """);
@@ -71,5 +72,11 @@ class JdbcFineRepositoryTest {
         Fine paid = fines.findByLoanId(loanId).orElseThrow();
         assertTrue(paid.paid());
         assertEquals(LocalDate.of(2026, 7, 20), paid.issuedDate());
+    }
+
+    @Test
+    void waiveRemovesFineFromUnpaidBalance() throws Exception {
+        fines.waive(fineId);
+        assertTrue(fines.findUnpaidByUser(userId).isEmpty());
     }
 }

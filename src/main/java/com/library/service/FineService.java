@@ -42,4 +42,10 @@ public final class FineService {
         fines.markPaid(fineId);
         audit.record(actor.id(), "PAY_FINE", "{\"fineId\":\"" + fineId + "\"}");
     }
+
+    public void waive(User actor, UUID fineId) throws SQLException {
+        authorization.require(actor.role(), Permission.MANAGE_LOANS);
+        fines.waive(fineId);
+        audit.record(actor.id(), "WAIVE_FINE", "{\"fineId\":\"" + fineId + "\"}");
+    }
 }

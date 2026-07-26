@@ -12,4 +12,6 @@ public interface FineRepository {
     List<Fine> findUnpaidByUser(UUID userId) throws SQLException;
 
     void markPaid(UUID fineId) throws SQLException;
+
+    void waive(UUID fineId) throws SQLException;
 }
