@@ -182,7 +182,8 @@ class PresentationContractTest {
         Document document = parse("/view/my-loans.fxml");
 
         assertEquals("VBox", document.getDocumentElement().getNodeName());
-        assertEquals(1, document.getElementsByTagName("ListView").getLength());
+        assertEquals(1, document.getElementsByTagName("TableView").getLength());
+        assertEquals(5, document.getElementsByTagName("TableColumn").getLength());
         assertEquals(4, document.getElementsByTagName("Button").getLength());
         assertEquals("#refresh",
                 document.getElementsByTagName("Button").item(0)

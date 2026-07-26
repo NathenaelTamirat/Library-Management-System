@@ -6,14 +6,16 @@ import com.library.domain.User;
 import com.library.service.CirculationService;
 import java.util.List;
 import java.util.UUID;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.stage.Stage;
 
 public final class MyLoansController {
@@ -22,7 +24,17 @@ public final class MyLoansController {
     private final UUID memberId;
 
     @FXML
-    private ListView<Loan> loansList;
+    private TableView<Loan> loansTable;
+    @FXML
+    private TableColumn<Loan, String> isbnColumn;
+    @FXML
+    private TableColumn<Loan, String> dueColumn;
+    @FXML
+    private TableColumn<Loan, String> statusColumn;
+    @FXML
+    private TableColumn<Loan, Number> renewalsColumn;
+    @FXML
+    private TableColumn<Loan, String> loanIdColumn;
     @FXML
     private Button refreshButton;
     @FXML
@@ -40,16 +52,21 @@ public final class MyLoansController {
 
     @FXML
     private void initialize() {
-        loansList.setCellFactory(ignored -> new ListCell<>() {
-            @Override
-            protected void updateItem(Loan loan, boolean empty) {
-                super.updateItem(loan, empty);
-                setText(empty || loan == null
-                        ? null
-                        : "%s — due %s [%s]".formatted(
-                                loan.isbn(), loan.dueDate(), loan.id()));
-            }
-        });
+        isbnColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().isbn()));
+        dueColumn.setCellValueFactory(data ->
+                new SimpleStringProperty(data.getValue().dueDate().toString()));
+        statusColumn.setCellValueFactory(data ->
+                new SimpleStringProperty(data.getValue().status().name()));
+        renewalsColumn.setCellValueFactory(data ->
+                new SimpleIntegerProperty(data.getValue().renewalCount()));
+        loanIdColumn.setCellValueFactory(data ->
+                new SimpleStringProperty(data.getValue().id().toString()));
+        isbnColumn.setSortable(true);
+        dueColumn.setSortable(true);
+        statusColumn.setSortable(true);
+        renewalsColumn.setSortable(true);
+        loanIdColumn.setSortable(true);
+        loansTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         refresh();
     }
 
@@ -63,7 +80,7 @@ public final class MyLoansController {
         };
         refreshButton.disableProperty().bind(task.runningProperty());
         task.setOnSucceeded(ignored -> {
-            loansList.setItems(FXCollections.observableArrayList(task.getValue()));
+            loansTable.setItems(FXCollections.observableArrayList(task.getValue()));
             statusLabel.setText(task.getValue().size() + " open loan(s)");
         });
         task.setOnFailed(ignored ->
@@ -73,7 +90,7 @@ public final class MyLoansController {
 
     @FXML
     private void returnSelected() {
-        Loan selected = loansList.getSelectionModel().getSelectedItem();
+        Loan selected = loansTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
             statusLabel.setText("Select a loan to return");
             return;
@@ -104,7 +121,7 @@ public final class MyLoansController {
 
     @FXML
     private void renewSelected() {
-        Loan selected = loansList.getSelectionModel().getSelectedItem();
+        Loan selected = loansTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
             statusLabel.setText("Select a loan to renew");
             return;
