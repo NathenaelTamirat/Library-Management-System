@@ -17,47 +17,69 @@
                 <Insets top="24" right="24" bottom="18" left="24"/>
             </padding>
             <Label text="University Library Catalog" styleClass="title"/>
+            <Label text="_Search catalog" mnemonicParsing="true" labelFor="$searchField"/>
             <HBox spacing="10">
                 <TextField fx:id="searchField"
                            promptText="Search by title, author, or ISBN"
+                           accessibleText="Search catalog by title, author, or ISBN"
                            HBox.hgrow="ALWAYS"/>
                 <Button fx:id="searchButton"
-                        text="Search"
+                        text="_Search"
+                        mnemonicParsing="true"
+                        accessibleText="Search catalog"
                         defaultButton="true"
                         onAction="#search"/>
                 <Button fx:id="recommendationsButton"
-                        text="For you"
+                        text="_For you"
+                        mnemonicParsing="true"
+                        accessibleText="Open recommendations"
                         onAction="#showRecommendations"/>
                 <Button fx:id="borrowButton"
-                        text="Borrow selected"
+                        text="_Borrow selected"
+                        mnemonicParsing="true"
+                        accessibleText="Borrow selected book"
                         onAction="#borrowSelected"/>
                 <Button fx:id="returnButton"
-                        text="Return selected"
+                        text="_Return selected"
+                        mnemonicParsing="true"
+                        accessibleText="Return selected book"
                         onAction="#returnSelected"/>
                 <Button fx:id="finesButton"
-                        text="Fines"
+                        text="F_ines"
+                        mnemonicParsing="true"
+                        accessibleText="Open unpaid fines"
                         onAction="#showFines"/>
                 <Button fx:id="myLoansButton"
-                        text="My loans"
+                        text="_My loans"
+                        mnemonicParsing="true"
+                        accessibleText="Open my loans"
                         onAction="#showMyLoans"/>
                 <Button fx:id="addButton"
-                        text="Add book"
+                        text="_Add book"
+                        mnemonicParsing="true"
+                        accessibleText="Add book"
                         onAction="#addBook"/>
                 <Button fx:id="editButton"
-                        text="Edit selected"
+                        text="_Edit selected"
+                        mnemonicParsing="true"
+                        accessibleText="Edit selected book"
                         onAction="#editSelected"/>
                 <Button fx:id="deleteButton"
-                        text="Delete selected"
+                        text="_Delete selected"
+                        mnemonicParsing="true"
+                        accessibleText="Delete selected book"
                         styleClass="danger-button"
                         onAction="#deleteSelected"/>
                 <Button fx:id="signOutButton"
-                        text="Sign out"
+                        text="Sign _out"
+                        mnemonicParsing="true"
+                        accessibleText="Sign out"
                         onAction="#signOut"/>
             </HBox>
         </VBox>
     </top>
     <center>
-        <TableView fx:id="resultsTable">
+        <TableView fx:id="resultsTable" accessibleText="Catalog search results">
             <columns>
                 <TableColumn fx:id="isbnColumn" text="ISBN" prefWidth="140"/>
                 <TableColumn fx:id="titleColumn" text="Title" prefWidth="280"/>

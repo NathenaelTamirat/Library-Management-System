@@ -194,6 +194,27 @@ class PresentationContractTest {
         assertEquals("#login",
                 document.getElementsByTagName("Button").item(0)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
+        assertTrue(document.getElementsByTagName("Label").item(2)
+                .getAttributes().getNamedItem("labelFor").getNodeValue().contains("emailField"));
+        assertEquals("true",
+                document.getElementsByTagName("Button").item(0)
+                        .getAttributes().getNamedItem("mnemonicParsing").getNodeValue());
+    }
+
+    @Test
+    void accessibilityBaselineUsesLabelForAndAccessibleNames() throws Exception {
+        Document catalog = parse("/view/catalog.fxml");
+        assertTrue(catalog.getElementsByTagName("Label").item(1)
+                .getAttributes().getNamedItem("labelFor").getNodeValue().contains("searchField"));
+        assertNotNull(catalog.getElementsByTagName("TableView").item(0)
+                .getAttributes().getNamedItem("accessibleText"));
+
+        Document editor = parse("/view/book-editor.fxml");
+        assertTrue(editor.getElementsByTagName("Label").item(1)
+                .getAttributes().getNamedItem("labelFor").getNodeValue().contains("isbnField"));
+        assertEquals("ISBN",
+                editor.getElementsByTagName("TextField").item(0)
+                        .getAttributes().getNamedItem("accessibleText").getNodeValue());
     }
 
     private Document parse(String resource) throws Exception {

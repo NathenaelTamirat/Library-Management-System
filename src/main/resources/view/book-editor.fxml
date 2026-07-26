@@ -15,18 +15,28 @@
     </padding>
     <Label fx:id="titleLabel" text="Add book" styleClass="editor-title"/>
     <GridPane hgap="12" vgap="12">
-        <Label text="ISBN" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-        <TextField fx:id="isbnField" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-        <Label text="Title" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-        <TextField fx:id="titleField" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-        <Label text="Author" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-        <TextField fx:id="authorField" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-        <Label text="Copies" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
-        <Spinner fx:id="copiesSpinner" editable="true" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+        <Label text="_ISBN" mnemonicParsing="true" labelFor="$isbnField"
+               GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <TextField fx:id="isbnField" accessibleText="ISBN"
+                   GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+        <Label text="_Title" mnemonicParsing="true" labelFor="$titleField"
+               GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+        <TextField fx:id="titleField" accessibleText="Title"
+                   GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+        <Label text="_Author" mnemonicParsing="true" labelFor="$authorField"
+               GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+        <TextField fx:id="authorField" accessibleText="Author"
+                   GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+        <Label text="_Copies" mnemonicParsing="true" labelFor="$copiesSpinner"
+               GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+        <Spinner fx:id="copiesSpinner" editable="true" accessibleText="Copies"
+                 GridPane.columnIndex="1" GridPane.rowIndex="3"/>
     </GridPane>
-    <Label fx:id="errorLabel" styleClass="error"/>
+    <Label fx:id="errorLabel" styleClass="error" accessibleText="Editor status"/>
     <HBox spacing="10">
-        <Button fx:id="saveButton" text="Save" defaultButton="true" onAction="#save"/>
-        <Button text="Cancel" cancelButton="true" onAction="#cancel"/>
+        <Button fx:id="saveButton" text="_Save" mnemonicParsing="true"
+                accessibleText="Save book" defaultButton="true" onAction="#save"/>
+        <Button text="_Cancel" mnemonicParsing="true" accessibleText="Cancel"
+                cancelButton="true" onAction="#cancel"/>
     </HBox>
 </VBox>

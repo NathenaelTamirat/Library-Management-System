@@ -12,12 +12,16 @@
         <Insets top="20" right="20" bottom="20" left="20"/>
     </padding>
     <Label text="Unpaid fines" styleClass="title"/>
-    <Label fx:id="balanceLabel" text="Balance: 0.00"/>
-    <ListView fx:id="finesList" prefHeight="280"/>
+    <Label fx:id="balanceLabel" text="Balance: 0.00" accessibleText="Unpaid fine balance"/>
+    <Label text="_Unpaid fines list" mnemonicParsing="true" labelFor="$finesList"/>
+    <ListView fx:id="finesList" prefHeight="280" accessibleText="Unpaid fines list"/>
     <HBox spacing="10">
-        <Button fx:id="refreshButton" text="Refresh" onAction="#refresh"/>
-        <Button fx:id="payButton" text="Pay selected" onAction="#paySelected"/>
-        <Button text="Close" cancelButton="true" onAction="#close"/>
+        <Button fx:id="refreshButton" text="_Refresh" mnemonicParsing="true"
+                accessibleText="Refresh fines" onAction="#refresh"/>
+        <Button fx:id="payButton" text="_Pay selected" mnemonicParsing="true"
+                accessibleText="Pay selected fine" onAction="#paySelected"/>
+        <Button text="_Close" mnemonicParsing="true" accessibleText="Close fines"
+                cancelButton="true" onAction="#close"/>
     </HBox>
     <Label fx:id="statusLabel" styleClass="status" text="Ready"/>
 </VBox>

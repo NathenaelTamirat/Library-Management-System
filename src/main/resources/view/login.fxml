@@ -15,13 +15,21 @@
         </padding>
         <Label text="University Library" styleClass="login-title"/>
         <Label text="Sign in with your library account"/>
-        <TextField fx:id="emailField" promptText="Email address"/>
-        <PasswordField fx:id="passwordField" promptText="Password"/>
+        <Label text="_Email" mnemonicParsing="true" labelFor="$emailField"/>
+        <TextField fx:id="emailField"
+                   promptText="Email address"
+                   accessibleText="Email address"/>
+        <Label text="_Password" mnemonicParsing="true" labelFor="$passwordField"/>
+        <PasswordField fx:id="passwordField"
+                       promptText="Password"
+                       accessibleText="Password"/>
         <Button fx:id="loginButton"
-                text="Sign in"
+                text="_Sign in"
+                mnemonicParsing="true"
                 maxWidth="Infinity"
                 defaultButton="true"
+                accessibleText="Sign in"
                 onAction="#login"/>
-        <Label fx:id="errorLabel" styleClass="error"/>
+        <Label fx:id="errorLabel" styleClass="error" accessibleText="Sign in status"/>
     </VBox>
 </StackPane>
