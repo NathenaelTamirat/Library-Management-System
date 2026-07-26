@@ -26,19 +26,34 @@ class PresentationContractTest {
 
     @Test
     void fxmlIsWellFormedAndWiresSearchControls() throws Exception {
-        try (InputStream input = getClass().getResourceAsStream("/view/catalog.fxml")) {
+        Document document = parse("/view/catalog.fxml");
+
+        assertEquals("BorderPane", document.getDocumentElement().getNodeName());
+        assertEquals(1, document.getElementsByTagName("TextField").getLength());
+        assertEquals("#search",
+                document.getElementsByTagName("Button").item(0)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
+        assertNotNull(getClass().getResource("/view/library.css"));
+    }
+
+    @Test
+    void loginFxmlWiresCredentialFieldsAndSignInAction() throws Exception {
+        Document document = parse("/view/login.fxml");
+
+        assertEquals("StackPane", document.getDocumentElement().getNodeName());
+        assertEquals(1, document.getElementsByTagName("PasswordField").getLength());
+        assertEquals("#login",
+                document.getElementsByTagName("Button").item(0)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
+    }
+
+    private Document parse(String resource) throws Exception {
+        try (InputStream input = getClass().getResourceAsStream(resource)) {
             assertNotNull(input);
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setNamespaceAware(true);
-            Document document = factory.newDocumentBuilder().parse(input);
-
-            assertEquals("BorderPane", document.getDocumentElement().getNodeName());
-            assertEquals(1, document.getElementsByTagName("TextField").getLength());
-            assertEquals("#search",
-                    document.getElementsByTagName("Button").item(0)
-                            .getAttributes().getNamedItem("onAction").getNodeValue());
+            return factory.newDocumentBuilder().parse(input);
         }
-        assertNotNull(getClass().getResource("/view/library.css"));
     }
 
     private static final class RecordingRepository implements BookRepository {

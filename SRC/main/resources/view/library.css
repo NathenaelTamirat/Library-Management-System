@@ -41,3 +41,23 @@
 .status {
     -fx-text-fill: #506275;
 }
+
+.login-background {
+    -fx-background-color: linear-gradient(to bottom right, #17324d, #28557b);
+}
+
+.login-card {
+    -fx-background-color: white;
+    -fx-background-radius: 10px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.25), 24, 0.2, 0, 8);
+}
+
+.login-title {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #17324d;
+}
+
+.error {
+    -fx-text-fill: #a32828;
+}
