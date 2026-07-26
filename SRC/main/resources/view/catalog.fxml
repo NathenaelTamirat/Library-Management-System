@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml">
+    <top>
+        <VBox spacing="12" styleClass="header">
+            <padding>
+                <Insets top="24" right="24" bottom="18" left="24"/>
+            </padding>
+            <Label text="University Library Catalog" styleClass="title"/>
+            <HBox spacing="10">
+                <TextField fx:id="searchField"
+                           promptText="Search by title, author, or ISBN"
+                           HBox.hgrow="ALWAYS"/>
+                <Button fx:id="searchButton"
+                        text="Search"
+                        defaultButton="true"
+                        onAction="#search"/>
+            </HBox>
+        </VBox>
+    </top>
+    <center>
+        <ListView fx:id="resultsList">
+            <BorderPane.margin>
+                <Insets top="16" right="24" bottom="16" left="24"/>
+            </BorderPane.margin>
+        </ListView>
+    </center>
+    <bottom>
+        <Label fx:id="statusLabel" text="Ready" styleClass="status">
+            <BorderPane.margin>
+                <Insets top="0" right="24" bottom="18" left="24"/>
+            </BorderPane.margin>
+        </Label>
+    </bottom>
+</BorderPane>
