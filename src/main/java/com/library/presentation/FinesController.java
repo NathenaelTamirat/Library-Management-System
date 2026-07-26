@@ -11,7 +11,9 @@ import java.util.UUID;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
@@ -96,6 +98,13 @@ public final class FinesController {
         Fine selected = finesList.getSelectionModel().getSelectedItem();
         if (selected == null) {
             statusLabel.setText("Select a fine to pay");
+            return;
+        }
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setTitle("Confirm fine payment");
+        confirmation.setHeaderText("Pay selected fine?");
+        confirmation.setContentText("Amount: " + selected.remaining().toPlainString());
+        if (confirmation.showAndWait().filter(ButtonType.OK::equals).isEmpty()) {
             return;
         }
         Task<Void> task = new Task<>() {

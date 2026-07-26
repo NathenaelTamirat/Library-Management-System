@@ -78,8 +78,11 @@ class PresentationContractTest {
         assertEquals("BorderPane", document.getDocumentElement().getNodeName());
         assertEquals(1, document.getElementsByTagName("TextField").getLength());
         assertEquals(1, document.getElementsByTagName("TableView").getLength());
-        assertEquals(4, document.getElementsByTagName("TableColumn").getLength());
-        assertEquals(18, document.getElementsByTagName("Button").getLength());
+        assertEquals(5, document.getElementsByTagName("TableColumn").getLength());
+        assertEquals("totalCopiesColumn",
+                document.getElementsByTagName("TableColumn").item(3)
+                        .getAttributes().getNamedItem("fx:id").getNodeValue());
+        assertEquals(19, document.getElementsByTagName("Button").getLength());
         assertEquals("#search",
                 document.getElementsByTagName("Button").item(0)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
@@ -101,38 +104,41 @@ class PresentationContractTest {
         assertEquals("#showMyLoans",
                 document.getElementsByTagName("Button").item(6)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#showOverdueLoans",
+        assertEquals("#showHolds",
                 document.getElementsByTagName("Button").item(7)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#showAuditLog",
+        assertEquals("#showOverdueLoans",
                 document.getElementsByTagName("Button").item(8)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#showUserAdmin",
+        assertEquals("#showAuditLog",
                 document.getElementsByTagName("Button").item(9)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#showPolicySettings",
+        assertEquals("#showUserAdmin",
                 document.getElementsByTagName("Button").item(10)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#exportCsv",
+        assertEquals("#showPolicySettings",
                 document.getElementsByTagName("Button").item(11)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#addBook",
+        assertEquals("#exportCsv",
                 document.getElementsByTagName("Button").item(12)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#editSelected",
+        assertEquals("#addBook",
                 document.getElementsByTagName("Button").item(13)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#showBookDetail",
+        assertEquals("#editSelected",
                 document.getElementsByTagName("Button").item(14)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#deleteSelected",
+        assertEquals("#showBookDetail",
                 document.getElementsByTagName("Button").item(15)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#showChangePassword",
+        assertEquals("#deleteSelected",
                 document.getElementsByTagName("Button").item(16)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#signOut",
+        assertEquals("#showChangePassword",
                 document.getElementsByTagName("Button").item(17)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
+        assertEquals("#signOut",
+                document.getElementsByTagName("Button").item(18)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
         assertNotNull(getClass().getResource("/view/library.css"));
         assertNotNull(getClass().getResource("/view/book-editor.fxml"));
@@ -140,6 +146,7 @@ class PresentationContractTest {
         assertNotNull(getClass().getResource("/view/recommendations.fxml"));
         assertNotNull(getClass().getResource("/view/fines.fxml"));
         assertNotNull(getClass().getResource("/view/my-loans.fxml"));
+        assertNotNull(getClass().getResource("/view/holds.fxml"));
         assertNotNull(getClass().getResource("/view/user-admin.fxml"));
         assertNotNull(getClass().getResource("/view/policy-settings.fxml"));
         assertNotNull(getClass().getResource("/view/change-password.fxml"));
@@ -207,6 +214,25 @@ class PresentationContractTest {
     }
 
     @Test
+    void holdsFxmlWiresRefreshPlaceAndCloseActions() throws Exception {
+        Document document = parse("/view/holds.fxml");
+
+        assertEquals("VBox", document.getDocumentElement().getNodeName());
+        assertEquals(1, document.getElementsByTagName("TableView").getLength());
+        assertEquals(4, document.getElementsByTagName("TableColumn").getLength());
+        assertEquals(3, document.getElementsByTagName("Button").getLength());
+        assertEquals("#refresh",
+                document.getElementsByTagName("Button").item(0)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
+        assertEquals("#placeSelected",
+                document.getElementsByTagName("Button").item(1)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
+        assertEquals("#close",
+                document.getElementsByTagName("Button").item(2)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
+    }
+
+    @Test
     void finesFxmlWiresRefreshPayAndCloseActions() throws Exception {
         Document document = parse("/view/fines.fxml");
 
@@ -229,8 +255,14 @@ class PresentationContractTest {
         Document document = parse("/view/book-editor.fxml");
 
         assertEquals("VBox", document.getDocumentElement().getNodeName());
-        assertEquals(4, document.getElementsByTagName("TextField").getLength());
+        assertEquals(6, document.getElementsByTagName("TextField").getLength());
         assertEquals(2, document.getElementsByTagName("Spinner").getLength());
+        assertEquals("Publisher",
+                document.getElementsByTagName("TextField").item(4)
+                        .getAttributes().getNamedItem("accessibleText").getNodeValue());
+        assertEquals("Subject",
+                document.getElementsByTagName("TextField").item(5)
+                        .getAttributes().getNamedItem("accessibleText").getNodeValue());
         assertEquals("#save",
                 document.getElementsByTagName("Button").item(0)
                         .getAttributes().getNamedItem("onAction").getNodeValue());

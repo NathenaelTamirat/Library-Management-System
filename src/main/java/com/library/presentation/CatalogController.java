@@ -10,6 +10,7 @@ import com.library.security.AuthorizationService;
 import com.library.security.Permission;
 import com.library.service.AuditService;
 import com.library.service.CatalogService;
+import com.library.service.CirculationReportService;
 import com.library.service.CirculationService;
 import com.library.service.ExportService;
 import com.library.service.FineService;
@@ -46,6 +47,7 @@ import javafx.beans.property.SimpleStringProperty;
 public final class CatalogController {
     private final CatalogService catalog;
     private final CirculationService circulation;
+    private final CirculationReportService circulationReports;
     private final FineService fines;
     private final RecommendationService recommendations;
     private final AuditService audits;
@@ -77,6 +79,8 @@ public final class CatalogController {
     @FXML
     private Button overdueButton;
     @FXML
+    private Button summaryButton;
+    @FXML
     private Button auditButton;
     @FXML
     private Button usersButton;
@@ -105,6 +109,8 @@ public final class CatalogController {
     @FXML
     private TableColumn<Book, String> authorColumn;
     @FXML
+    private TableColumn<Book, Number> totalCopiesColumn;
+    @FXML
     private TableColumn<Book, Number> availableColumn;
     @FXML
     private Label statusLabel;
@@ -112,6 +118,7 @@ public final class CatalogController {
     public CatalogController(
             CatalogService catalog,
             CirculationService circulation,
+            CirculationReportService circulationReports,
             FineService fines,
             RecommendationService recommendations,
             AuditService audits,
@@ -125,6 +132,7 @@ public final class CatalogController {
             Runnable onSignOut) {
         this.catalog = catalog;
         this.circulation = circulation;
+        this.circulationReports = circulationReports;
         this.fines = fines;
         this.recommendations = recommendations;
         this.audits = audits;
@@ -143,11 +151,14 @@ public final class CatalogController {
         isbnColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().isbn()));
         titleColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().title()));
         authorColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().author()));
+        totalCopiesColumn.setCellValueFactory(data ->
+                new SimpleIntegerProperty(data.getValue().totalCopies()));
         availableColumn.setCellValueFactory(data ->
                 new SimpleIntegerProperty(data.getValue().availableCopies()));
         isbnColumn.setSortable(true);
         titleColumn.setSortable(true);
         authorColumn.setSortable(true);
+        totalCopiesColumn.setSortable(true);
         availableColumn.setSortable(true);
         resultsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         searchField.setOnAction(ignored -> search());
@@ -175,6 +186,8 @@ public final class CatalogController {
         myLoansButton.setManaged(showMyLoans);
         overdueButton.setVisible(manageLoans);
         overdueButton.setManaged(manageLoans);
+        summaryButton.setVisible(manageLoans);
+        summaryButton.setManaged(manageLoans);
         boolean viewAudit = authorization.isAllowed(currentUser.role(), Permission.VIEW_AUDIT_LOG);
         auditButton.setVisible(viewAudit);
         auditButton.setManaged(viewAudit);
@@ -207,8 +220,10 @@ public final class CatalogController {
         statusLabel.textProperty().bind(searchTask.messageProperty());
         searchTask.setOnSucceeded(ignored -> {
             statusLabel.textProperty().unbind();
-            statusLabel.setText(searchTask.getValue().size() + " book(s) found");
+            String message = searchTask.getValue().size() + " book(s) found";
+            statusLabel.setText(message);
             resultsTable.setItems(FXCollections.observableArrayList(searchTask.getValue()));
+            StatusToast.show(searchButton.getScene().getWindow(), message);
         });
         searchTask.setOnFailed(ignored -> {
             statusLabel.textProperty().unbind();
@@ -519,6 +534,26 @@ public final class CatalogController {
             dialog.showAndWait();
         } catch (IOException failure) {
             statusLabel.setText("Unable to open overdue report: " + failure.getMessage());
+        }
+    }
+
+    @FXML
+    private void showCirculationSummary() {
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/view/circulation-summary.fxml"));
+            loader.setController(new CirculationSummaryController(circulationReports, currentUser));
+            Parent root = loader.load();
+            Stage dialog = new Stage();
+            dialog.initModality(Modality.APPLICATION_MODAL);
+            dialog.setTitle("Circulation summary");
+            Scene scene = new Scene(root, 440, 360);
+            scene.getStylesheets().add(
+                    getClass().getResource("/view/library.css").toExternalForm());
+            dialog.setScene(scene);
+            dialog.showAndWait();
+        } catch (IOException failure) {
+            statusLabel.setText("Unable to open circulation summary: " + failure.getMessage());
         }
     }
 

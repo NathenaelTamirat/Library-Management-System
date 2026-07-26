@@ -59,11 +59,21 @@
                         mnemonicParsing="true"
                         accessibleText="Open my loans"
                         onAction="#showMyLoans"/>
+                <Button fx:id="holdsButton"
+                        text="My _holds"
+                        mnemonicParsing="true"
+                        accessibleText="Open my holds for selected book"
+                        onAction="#showHolds"/>
                 <Button fx:id="overdueButton"
                         text="Over_due"
                         mnemonicParsing="true"
                         accessibleText="Open overdue loans report"
                         onAction="#showOverdueLoans"/>
+                <Button fx:id="summaryButton"
+                        text="Circulation su_mmary"
+                        mnemonicParsing="true"
+                        accessibleText="Open circulation summary dashboard"
+                        onAction="#showCirculationSummary"/>
                 <Button fx:id="auditButton"
                         text="A_udit log"
                         mnemonicParsing="true"
@@ -124,6 +134,7 @@
                 <TableColumn fx:id="isbnColumn" text="ISBN" prefWidth="140"/>
                 <TableColumn fx:id="titleColumn" text="Title" prefWidth="280"/>
                 <TableColumn fx:id="authorColumn" text="Author" prefWidth="180"/>
+                <TableColumn fx:id="totalCopiesColumn" text="Total copies" prefWidth="100"/>
                 <TableColumn fx:id="availableColumn" text="Available" prefWidth="100"/>
             </columns>
             <BorderPane.margin>
