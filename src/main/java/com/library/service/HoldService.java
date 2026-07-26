@@ -2,17 +2,21 @@ package com.library.service;
 
 import com.library.data.HoldRepository;
 import com.library.domain.Hold;
+import com.library.domain.HoldStatus;
 import com.library.domain.Member;
 import com.library.domain.User;
 import com.library.security.AuthorizationService;
 import com.library.security.Permission;
 import java.sql.SQLException;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public final class HoldService {
+    public static final Duration READY_HOLD_DURATION = Duration.ofHours(48);
+
     private final HoldRepository holds;
     private final AuthorizationService authorization;
     private final AuditService audit;
@@ -78,6 +82,25 @@ public final class HoldService {
         if (hold.isPresent()) {
             holds.fulfill(hold.orElseThrow().id());
         }
+    }
+
+    public Optional<Hold> readyNextForIsbn(String isbn) throws SQLException {
+        Optional<Hold> first = holds.findFirstActiveByIsbn(isbn);
+        if (first.isEmpty() || first.orElseThrow().status() != HoldStatus.WAITING) {
+            return Optional.empty();
+        }
+        Hold hold = first.orElseThrow();
+        var expiresAt = clock.instant().plus(READY_HOLD_DURATION);
+        holds.markReady(hold.id(), expiresAt);
+        Hold ready = holds.findById(hold.id()).orElse(hold);
+        if (ready.status() == HoldStatus.WAITING) {
+            ready.markReady(expiresAt);
+        }
+        audit.record(
+                ready.userId(),
+                "HOLD_READY",
+                "{\"holdId\":\"" + ready.id() + "\",\"isbn\":\"" + isbn + "\"}");
+        return Optional.of(ready);
     }
 
     public int expireStale(User actor) throws SQLException {

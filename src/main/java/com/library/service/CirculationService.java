@@ -134,6 +134,9 @@ public final class CirculationService {
         if (actor instanceof Member member) {
             member.removeActiveLoan(loanId);
         }
+        if (holds != null) {
+            holds.readyNextForIsbn(receipt.loan().isbn());
+        }
         audit.record(
                 actor.id(),
                 "RETURN",

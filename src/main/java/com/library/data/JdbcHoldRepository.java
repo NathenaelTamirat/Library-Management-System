@@ -27,6 +27,11 @@ public final class JdbcHoldRepository implements HoldRepository {
             UPDATE holds SET status = 'FULFILLED'
             WHERE id = ? AND status IN ('WAITING', 'READY')
             """;
+    private static final String MARK_READY = """
+            UPDATE holds
+            SET status = 'READY', expires_at = ?
+            WHERE id = ? AND status = 'WAITING'
+            """;
     private static final String EXPIRE_READY = """
             UPDATE holds
             SET status = 'EXPIRED'
@@ -106,6 +111,18 @@ public final class JdbcHoldRepository implements HoldRepository {
             statement.setObject(1, holdId);
             if (statement.executeUpdate() != 1) {
                 throw new SQLException("Hold could not be fulfilled: " + holdId);
+            }
+        }
+    }
+
+    @Override
+    public void markReady(UUID holdId, Instant expiresAt) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(MARK_READY)) {
+            statement.setTimestamp(1, Timestamp.from(expiresAt));
+            statement.setObject(2, holdId);
+            if (statement.executeUpdate() != 1) {
+                throw new SQLException("Hold could not be marked ready: " + holdId);
             }
         }
     }

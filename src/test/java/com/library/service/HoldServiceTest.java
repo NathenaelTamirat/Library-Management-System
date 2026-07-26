@@ -87,6 +87,28 @@ class HoldServiceTest {
     }
 
     @Test
+    void readyNextForIsbnMarksFifoHeadReadyWithExpiry() throws Exception {
+        RecordingHolds holds = new RecordingHolds();
+        holds.books.add("9780134685991");
+        RecordingAudit audits = new RecordingAudit();
+        Clock clock = Clock.fixed(Instant.parse("2026-07-26T12:00:00Z"), ZoneOffset.UTC);
+        HoldService service = new HoldService(
+                holds, new AuthorizationService(), new AuditService(audits), clock);
+        Member first = new Member(UUID.randomUUID(), "Ada", "ada@example.edu", "hash", 5);
+        Member second = new Member(UUID.randomUUID(), "Grace", "grace@example.edu", "hash", 5);
+        Hold head = service.place(first, "9780134685991");
+        holds.place(second.id(), "9780134685991", Instant.parse("2026-07-26T13:00:00Z"));
+
+        Hold ready = service.readyNextForIsbn("9780134685991").orElseThrow();
+
+        assertEquals(head.id(), ready.id());
+        assertEquals("READY", ready.status().name());
+        assertEquals(Instant.parse("2026-07-28T12:00:00Z"), ready.expiresAt());
+        assertEquals(head.id(), holds.readyIds.get(0));
+        assertTrue(audits.actions.contains("HOLD_READY"));
+    }
+
+    @Test
     void staffCanExpireStaleReadyHoldsUsingInjectedClock() throws Exception {
         RecordingHolds holds = new RecordingHolds();
         RecordingAudit audits = new RecordingAudit();
@@ -135,6 +157,7 @@ class HoldServiceTest {
         private final Map<UUID, Hold> byId = new HashMap<>();
         private final List<String> books = new ArrayList<>();
         private final List<UUID> cancelled = new ArrayList<>();
+        private final List<UUID> readyIds = new ArrayList<>();
         private Instant expiredAsOf;
 
         @Override
@@ -153,6 +176,12 @@ class HoldServiceTest {
         @Override
         public void fulfill(UUID holdId) {
             byId.get(holdId).fulfill();
+        }
+
+        @Override
+        public void markReady(UUID holdId, Instant expiresAt) {
+            readyIds.add(holdId);
+            byId.get(holdId).markReady(expiresAt);
         }
 
         @Override

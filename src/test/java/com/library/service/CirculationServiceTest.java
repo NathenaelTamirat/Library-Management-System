@@ -435,6 +435,10 @@ class CirculationServiceTest {
         }
 
         @Override
+        public void markReady(UUID holdId, Instant expiresAt) {
+        }
+
+        @Override
         public int expireReadyBefore(Instant asOf) {
             return 0;
         }

@@ -14,6 +14,8 @@ public interface HoldRepository {
 
     void fulfill(UUID holdId) throws SQLException;
 
+    void markReady(UUID holdId, Instant expiresAt) throws SQLException;
+
     int expireReadyBefore(Instant asOf) throws SQLException;
 
     Optional<Hold> findById(UUID holdId) throws SQLException;
