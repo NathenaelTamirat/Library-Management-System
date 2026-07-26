@@ -1,6 +1,7 @@
 package com.library.service;
 
 import com.library.data.BookRepository;
+import com.library.data.LoanTransactionManager;
 import com.library.domain.Book;
 import com.library.domain.User;
 import com.library.security.AuthorizationService;
@@ -11,14 +12,17 @@ import java.util.Optional;
 
 public final class CatalogService {
     private final BookRepository books;
+    private final LoanTransactionManager loans;
     private final AuthorizationService authorization;
     private final AuditService audit;
 
     public CatalogService(
             BookRepository books,
+            LoanTransactionManager loans,
             AuthorizationService authorization,
             AuditService audit) {
         this.books = books;
+        this.loans = loans;
         this.authorization = authorization;
         this.audit = audit;
     }
@@ -47,6 +51,16 @@ public final class CatalogService {
         if (books.findByIsbn(book.isbn()).isEmpty()) {
             throw new IllegalStateException("Book does not exist: " + book.isbn());
         }
+        int checkedOut = loans.countOpenLoansByIsbn(book.isbn());
+        if (book.totalCopies() < checkedOut) {
+            throw new IllegalStateException(
+                    "Total copies cannot drop below checked-out copies (" + checkedOut + ")");
+        }
+        if (book.totalCopies() - book.availableCopies() < checkedOut) {
+            throw new IllegalStateException(
+                    "Available copies imply fewer checked-out copies than open loans ("
+                            + checkedOut + ")");
+        }
         books.update(book);
         audit.record(actor.id(), "UPDATE_BOOK", "{\"isbn\":\"" + book.isbn() + "\"}");
         return book;
@@ -54,6 +68,11 @@ public final class CatalogService {
 
     public void delete(User actor, String isbn) throws SQLException {
         authorization.require(actor.role(), Permission.MANAGE_CATALOG);
+        int open = loans.countOpenLoansByIsbn(isbn);
+        if (open > 0) {
+            throw new IllegalStateException(
+                    "Cannot delete book with " + open + " open loan(s): " + isbn);
+        }
         books.delete(isbn);
         audit.record(actor.id(), "DELETE_BOOK", "{\"isbn\":\"" + isbn + "\"}");
     }

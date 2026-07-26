@@ -3,15 +3,18 @@ package com.library.presentation;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.library.data.BookRepository;
+import com.library.data.LoanTransactionManager;
 import com.library.domain.Book;
 import com.library.domain.Librarian;
+import com.library.domain.Loan;
 import com.library.domain.Member;
+import com.library.domain.ReturnReceipt;
 import com.library.security.AuthorizationService;
 import com.library.service.AuditService;
 import com.library.service.CatalogService;
 import java.io.InputStream;
-import java.sql.SQLException;
-import java.util.ArrayList;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,7 +28,7 @@ class PresentationContractTest {
         Book expected = new Book("9780134685991", "Effective Java", "Joshua Bloch", 2, 1);
         RecordingRepository repository = new RecordingRepository(expected);
         CatalogService catalog = new CatalogService(
-                repository, new AuthorizationService(), silentAudit());
+                repository, new NoOpenLoans(), new AuthorizationService(), silentAudit());
 
         assertEquals(List.of(expected), catalog.search("  Bloch  "));
         assertEquals("Bloch", repository.lastQuery);
@@ -36,7 +39,7 @@ class PresentationContractTest {
         Book expected = new Book("9780134685991", "Effective Java", "Joshua Bloch", 2, 1);
         RecordingRepository repository = new RecordingRepository(expected);
         CatalogService catalog = new CatalogService(
-                repository, new AuthorizationService(), silentAudit());
+                repository, new NoOpenLoans(), new AuthorizationService(), silentAudit());
         Member member = new Member(UUID.randomUUID(), "Member", "member@example.edu", "hash", 5);
         Librarian librarian = new Librarian(
                 UUID.randomUUID(), "Librarian", "librarian@example.edu", "hash", "AUD-1", false);
@@ -57,7 +60,7 @@ class PresentationContractTest {
         Book expected = new Book("9780134685991", "Effective Java", "Joshua Bloch", 2, 1);
         RecordingRepository repository = new RecordingRepository(expected);
         CatalogService catalog = new CatalogService(
-                repository, new AuthorizationService(), silentAudit());
+                repository, new NoOpenLoans(), new AuthorizationService(), silentAudit());
         Member member = new Member(UUID.randomUUID(), "Member", "member@example.edu", "hash", 5);
         Librarian librarian = new Librarian(
                 UUID.randomUUID(), "Librarian", "librarian@example.edu", "hash", "AUD-1", false);
@@ -153,6 +156,59 @@ class PresentationContractTest {
     private static AuditService silentAudit() {
         return new AuditService((userId, action, details) -> {
         });
+    }
+
+    private static final class NoOpenLoans implements LoanTransactionManager {
+        @Override
+        public Loan checkout(
+                UUID userId, String isbn, LocalDate checkoutDate, LocalDate dueDate, int borrowingLimit) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ReturnReceipt returnLoan(UUID loanId, LocalDate returnDate) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Loan renew(UUID loanId, LocalDate newDueDate) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int markOverdueBefore(LocalDate asOfDate) {
+            return 0;
+        }
+
+        @Override
+        public Loan markLost(UUID loanId, BigDecimal replacementFine, LocalDate issuedDate) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int countOpenLoansByIsbn(String isbn) {
+            return 0;
+        }
+
+        @Override
+        public List<Loan> findOpenLoansByUser(UUID userId) {
+            return List.of();
+        }
+
+        @Override
+        public List<Loan> findOverdueLoans() {
+            return List.of();
+        }
+
+        @Override
+        public Optional<Loan> findById(UUID loanId) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Loan> findActiveLoanByIsbn(String isbn) {
+            return Optional.empty();
+        }
     }
 
     private static final class RecordingRepository implements BookRepository {

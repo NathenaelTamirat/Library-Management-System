@@ -45,10 +45,12 @@ public final class LibraryApplication extends Application {
         dataSource = DataSourceFactory.create(config);
         authorization = new AuthorizationService();
         AuditService audit = new AuditService(new JdbcAuditRepository(dataSource, true));
-        catalog = new CatalogService(new JdbcBookRepository(dataSource), authorization, audit);
+        JdbcLoanTransactionManager loanTransactions = new JdbcLoanTransactionManager(dataSource);
+        catalog = new CatalogService(
+                new JdbcBookRepository(dataSource), loanTransactions, authorization, audit);
         JdbcFineRepository fineRepository = new JdbcFineRepository(dataSource);
         circulation = new CirculationService(
-                new JdbcLoanTransactionManager(dataSource),
+                loanTransactions,
                 fineRepository,
                 authorization,
                 audit,
