@@ -4,6 +4,7 @@ import com.library.data.DataSourceFactory;
 import com.library.data.JdbcAuditRepository;
 import com.library.data.JdbcBookRepository;
 import com.library.data.JdbcCirculationReportRepository;
+import com.library.data.JdbcFineEventRepository;
 import com.library.data.JdbcFineRepository;
 import com.library.data.JdbcHoldRepository;
 import com.library.data.JdbcLoanPolicyRepository;
@@ -99,7 +100,12 @@ public final class LibraryApplication extends Application {
         circulationReports = new CirculationReportService(
                 new JdbcCirculationReportRepository(dataSource), authorization);
         exports = new ExportService(bookRepository, loanTransactions, fineRepository, authorization);
-        fines = new FineService(fineRepository, authorization, audit);
+        fines = new FineService(
+                fineRepository,
+                new JdbcFineEventRepository(dataSource),
+                authorization,
+                audit,
+                Clock.systemUTC());
         recommendations = new RecommendationService(
                 new JdbcRecommendationRepository(dataSource), authorization);
         Argon2PasswordHasher passwordHasher = new Argon2PasswordHasher();

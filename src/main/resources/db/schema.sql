@@ -85,6 +85,17 @@ CREATE TABLE IF NOT EXISTS fines (
 ALTER TABLE fines ADD COLUMN IF NOT EXISTS waived BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE fines ADD COLUMN IF NOT EXISTS amount_paid NUMERIC(12, 2) NOT NULL DEFAULT 0;
 
+CREATE TABLE IF NOT EXISTS fine_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    fine_id UUID NOT NULL REFERENCES fines(id),
+    actor_id UUID NOT NULL REFERENCES users(id),
+    event_type VARCHAR(20) NOT NULL,
+    amount NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (amount >= 0),
+    occurred_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS fine_events_fine_id_idx ON fine_events (fine_id, occurred_at);
+
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'hold_status') THEN

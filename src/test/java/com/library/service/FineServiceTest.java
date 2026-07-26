@@ -40,9 +40,14 @@ class FineServiceTest {
     @Test
     void staffCanRecordPartialFinePayments() throws Exception {
         RecordingFines repository = new RecordingFines();
+        RecordingEvents events = new RecordingEvents();
         RecordingAudits audits = new RecordingAudits();
         FineService service = new FineService(
-                repository, new AuthorizationService(), new AuditService(audits));
+                repository,
+                events,
+                new AuthorizationService(),
+                new AuditService(audits),
+                java.time.Clock.systemUTC());
         Librarian librarian = new Librarian(
                 UUID.randomUUID(), "Lib", "lib@example.edu", "hash", "AUD-1", false);
         UUID fineId = UUID.randomUUID();
@@ -52,6 +57,8 @@ class FineServiceTest {
         assertEquals(fineId, repository.paidFineId);
         assertEquals(new BigDecimal("1.25"), repository.partialPayment);
         assertEquals("PAY_FINE_PARTIAL", audits.actions.get(0));
+        assertEquals(1, events.recorded.size());
+        assertEquals(com.library.domain.FineEventType.PAY_PARTIAL, events.recorded.get(0).type());
     }
 
     @Test
@@ -70,6 +77,28 @@ class FineServiceTest {
         service.waive(librarian, fine.id());
         assertEquals(fine.id(), repository.waivedFineId);
         assertEquals("WAIVE_FINE", audits.actions.get(0));
+    }
+
+    private static final class RecordingEvents implements com.library.data.FineEventRepository {
+        private final List<com.library.domain.FineEvent> recorded = new ArrayList<>();
+
+        @Override
+        public com.library.domain.FineEvent record(
+                UUID fineId,
+                UUID actorId,
+                com.library.domain.FineEventType type,
+                BigDecimal amount,
+                java.time.Instant occurredAt) {
+            com.library.domain.FineEvent event = new com.library.domain.FineEvent(
+                    UUID.randomUUID(), fineId, actorId, type, amount, occurredAt);
+            recorded.add(event);
+            return event;
+        }
+
+        @Override
+        public List<com.library.domain.FineEvent> findByFineId(UUID fineId) {
+            return recorded.stream().filter(event -> event.fineId().equals(fineId)).toList();
+        }
     }
 
     private static final class RecordingFines implements FineRepository {
