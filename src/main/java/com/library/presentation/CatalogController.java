@@ -25,11 +25,13 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
 
 public final class CatalogController {
     private final CatalogService catalog;
@@ -63,7 +65,15 @@ public final class CatalogController {
     @FXML
     private Button signOutButton;
     @FXML
-    private ListView<Book> resultsList;
+    private TableView<Book> resultsTable;
+    @FXML
+    private TableColumn<Book, String> isbnColumn;
+    @FXML
+    private TableColumn<Book, String> titleColumn;
+    @FXML
+    private TableColumn<Book, String> authorColumn;
+    @FXML
+    private TableColumn<Book, Number> availableColumn;
     @FXML
     private Label statusLabel;
 
@@ -86,16 +96,16 @@ public final class CatalogController {
 
     @FXML
     private void initialize() {
-        resultsList.setCellFactory(ignored -> new ListCell<>() {
-            @Override
-            protected void updateItem(Book book, boolean empty) {
-                super.updateItem(book, empty);
-                setText(empty || book == null
-                        ? null
-                        : "%s — %s (%d available)".formatted(
-                                book.title(), book.author(), book.availableCopies()));
-            }
-        });
+        isbnColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().isbn()));
+        titleColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().title()));
+        authorColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().author()));
+        availableColumn.setCellValueFactory(data ->
+                new SimpleIntegerProperty(data.getValue().availableCopies()));
+        isbnColumn.setSortable(true);
+        titleColumn.setSortable(true);
+        authorColumn.setSortable(true);
+        availableColumn.setSortable(true);
+        resultsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         searchField.setOnAction(ignored -> search());
         boolean member = currentUser instanceof Member
                 && authorization.isAllowed(currentUser.role(), Permission.BORROW_BOOK);
@@ -135,7 +145,7 @@ public final class CatalogController {
         searchTask.setOnSucceeded(ignored -> {
             statusLabel.textProperty().unbind();
             statusLabel.setText(searchTask.getValue().size() + " book(s) found");
-            resultsList.setItems(FXCollections.observableArrayList(searchTask.getValue()));
+            resultsTable.setItems(FXCollections.observableArrayList(searchTask.getValue()));
         });
         searchTask.setOnFailed(ignored -> {
             statusLabel.textProperty().unbind();
@@ -145,6 +155,10 @@ public final class CatalogController {
         Thread worker = new Thread(searchTask, "catalog-search");
         worker.setDaemon(true);
         worker.start();
+    }
+
+    private Book selectedBook() {
+        return resultsTable.getSelectionModel().getSelectedItem();
     }
 
     @FXML
@@ -175,7 +189,7 @@ public final class CatalogController {
 
     @FXML
     private void borrowSelected() {
-        Book selected = resultsList.getSelectionModel().getSelectedItem();
+        Book selected = selectedBook();
         if (selected == null || !(currentUser instanceof Member member)) {
             statusLabel.setText("Select a book to borrow");
             return;
@@ -217,7 +231,7 @@ public final class CatalogController {
 
     @FXML
     private void editSelected() {
-        Book selected = resultsList.getSelectionModel().getSelectedItem();
+        Book selected = selectedBook();
         if (selected == null) {
             statusLabel.setText("Select a book to edit");
             return;
@@ -227,7 +241,7 @@ public final class CatalogController {
 
     @FXML
     private void returnSelected() {
-        Book selected = resultsList.getSelectionModel().getSelectedItem();
+        Book selected = selectedBook();
         if (selected == null) {
             statusLabel.setText("Select a book to return");
             return;
@@ -312,7 +326,7 @@ public final class CatalogController {
 
     @FXML
     private void deleteSelected() {
-        Book selected = resultsList.getSelectionModel().getSelectedItem();
+        Book selected = selectedBook();
         if (selected == null) {
             statusLabel.setText("Select a book to delete");
             return;

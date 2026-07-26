@@ -77,6 +77,8 @@ class PresentationContractTest {
 
         assertEquals("BorderPane", document.getDocumentElement().getNodeName());
         assertEquals(1, document.getElementsByTagName("TextField").getLength());
+        assertEquals(1, document.getElementsByTagName("TableView").getLength());
+        assertEquals(4, document.getElementsByTagName("TableColumn").getLength());
         assertEquals(10, document.getElementsByTagName("Button").getLength());
         assertEquals("#search",
                 document.getElementsByTagName("Button").item(0)
