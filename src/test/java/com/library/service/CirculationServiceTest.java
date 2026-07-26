@@ -102,6 +102,25 @@ class CirculationServiceTest {
     }
 
     @Test
+    void staffCanMarkLoanLostWithReplacementFineAudit() throws Exception {
+        RecordingTransactions transactions = new RecordingTransactions();
+        RecordingAuditRepository audits = new RecordingAuditRepository();
+        Clock clock = Clock.fixed(Instant.parse("2026-07-26T00:00:00Z"), ZoneOffset.UTC);
+        CirculationService circulation = service(transactions, audits, clock, new RecordingFines(), 14);
+        Member member = new Member(
+                UUID.randomUUID(), "Ada", "ada@example.edu", "hash", 1);
+        Librarian librarian = new Librarian(
+                UUID.randomUUID(), "Libby", "lib@example.edu", "hash", "desk", false);
+        Loan loan = circulation.checkout(member, "9780134685991");
+
+        Loan lost = circulation.markLost(librarian, loan.id());
+
+        assertEquals(LoanStatus.LOST, lost.status());
+        assertEquals(List.of("CHECKOUT", "MARK_LOST"), audits.actions);
+        assertThrows(SecurityException.class, () -> circulation.markLost(member, loan.id()));
+    }
+
+    @Test
     void staffCanReconcileOverdueLoansUsingInjectedClock() throws Exception {
         RecordingTransactions transactions = new RecordingTransactions();
         RecordingAuditRepository audits = new RecordingAuditRepository();

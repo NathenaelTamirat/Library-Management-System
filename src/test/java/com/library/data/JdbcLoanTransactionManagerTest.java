@@ -175,6 +175,25 @@ class JdbcLoanTransactionManagerTest {
     }
 
     @Test
+    void markLostCreatesReplacementFineWithoutRestoringInventory() throws Exception {
+        Loan loan = transactions.checkout(
+                userId,
+                "9780134685991",
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 7, 15),
+                5);
+        assertEquals(0, scalar("SELECT available_copies FROM books"));
+
+        Loan lost = transactions.markLost(
+                loan.id(), new BigDecimal("50.00"), LocalDate.of(2026, 7, 26));
+
+        assertEquals(LoanStatus.LOST, lost.status());
+        assertEquals(0, scalar("SELECT available_copies FROM books"));
+        assertEquals(1, scalar("SELECT COUNT(*) FROM fines"));
+        assertEquals(0, scalar("SELECT COUNT(*) FROM loans WHERE status IN ('ACTIVE', 'OVERDUE')"));
+    }
+
+    @Test
     void markOverdueBeforeFlipsPastDueActiveLoans() throws Exception {
         transactions.checkout(
                 userId,
