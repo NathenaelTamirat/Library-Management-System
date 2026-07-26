@@ -44,6 +44,7 @@ class JdbcFineRepositoryTest {
                         id UUID PRIMARY KEY,
                         loan_id UUID NOT NULL UNIQUE REFERENCES loans(id),
                         amount DECIMAL(12, 2) NOT NULL,
+                        amount_paid DECIMAL(12, 2) NOT NULL DEFAULT 0,
                         paid_status BOOLEAN NOT NULL,
                         waived BOOLEAN NOT NULL DEFAULT FALSE,
                         issued_date DATE NOT NULL
@@ -52,8 +53,8 @@ class JdbcFineRepositoryTest {
             statement.execute("INSERT INTO users (id) VALUES ('" + userId + "')");
             statement.execute("INSERT INTO loans (id, user_id) VALUES ('" + loanId + "', '" + userId + "')");
             statement.execute("""
-                    INSERT INTO fines (id, loan_id, amount, paid_status, issued_date)
-                    VALUES ('%s', '%s', 4.50, FALSE, DATE '2026-07-20')
+                    INSERT INTO fines (id, loan_id, amount, amount_paid, paid_status, issued_date)
+                    VALUES ('%s', '%s', 4.50, 0, FALSE, DATE '2026-07-20')
                     """.formatted(fineId, loanId));
         }
         fines = new JdbcFineRepository(dataSource);
@@ -72,6 +73,21 @@ class JdbcFineRepositoryTest {
         Fine paid = fines.findByLoanId(loanId).orElseThrow();
         assertTrue(paid.paid());
         assertEquals(LocalDate.of(2026, 7, 20), paid.issuedDate());
+    }
+
+    @Test
+    void payPartialReducesRemainingBalanceUntilSettled() throws Exception {
+        fines.payPartial(fineId, new BigDecimal("1.50"));
+        Fine partial = fines.findByLoanId(loanId).orElseThrow();
+        assertEquals(new BigDecimal("1.50"), partial.amountPaid());
+        assertEquals(new BigDecimal("3.00"), partial.remaining());
+        assertFalse(partial.paid());
+        assertEquals(1, fines.findUnpaidByUser(userId).size());
+
+        fines.payPartial(fineId, new BigDecimal("3.00"));
+        Fine settled = fines.findByLoanId(loanId).orElseThrow();
+        assertTrue(settled.paid());
+        assertTrue(fines.findUnpaidByUser(userId).isEmpty());
     }
 
     @Test

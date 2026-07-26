@@ -312,6 +312,10 @@ class CirculationServiceTest {
         }
 
         @Override
+        public void payPartial(UUID fineId, BigDecimal payment) {
+        }
+
+        @Override
         public void waive(UUID fineId) {
         }
     }

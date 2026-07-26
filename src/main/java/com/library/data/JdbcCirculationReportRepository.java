@@ -13,8 +13,9 @@ public final class JdbcCirculationReportRepository implements CirculationReportR
                 (SELECT COUNT(*) FROM loans WHERE status IN ('ACTIVE', 'OVERDUE')) AS open_loans,
                 (SELECT COUNT(*) FROM loans WHERE status = 'OVERDUE') AS overdue_loans,
                 (SELECT COUNT(*) FROM fines WHERE paid_status = FALSE AND waived = FALSE) AS unpaid_fines,
-                (SELECT COALESCE(SUM(amount), 0) FROM fines
-                    WHERE paid_status = FALSE AND waived = FALSE) AS unpaid_fine_total,
+                (SELECT COALESCE(SUM(amount - amount_paid), 0) FROM fines
+                    WHERE paid_status = FALSE AND waived = FALSE
+                      AND amount_paid < amount) AS unpaid_fine_total,
                 (SELECT COALESCE(SUM(available_copies), 0) FROM books) AS available_copies,
                 (SELECT COALESCE(SUM(total_copies), 0) FROM books) AS total_copies
             """;

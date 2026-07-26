@@ -45,6 +45,7 @@ class JdbcCirculationReportRepositoryTest {
                         id UUID PRIMARY KEY,
                         loan_id UUID NOT NULL REFERENCES loans(id),
                         amount DECIMAL(12, 2) NOT NULL,
+                        amount_paid DECIMAL(12, 2) NOT NULL DEFAULT 0,
                         paid_status BOOLEAN NOT NULL,
                         waived BOOLEAN NOT NULL DEFAULT FALSE
                     )
@@ -60,9 +61,9 @@ class JdbcCirculationReportRepositoryTest {
             statement.execute("INSERT INTO loans VALUES ('" + overdueLoan + "', '" + userId
                     + "', '9780321356680', 'OVERDUE')");
             statement.execute("INSERT INTO fines VALUES ('" + UUID.randomUUID() + "', '"
-                    + overdueLoan + "', 4.50, FALSE, FALSE)");
+                    + overdueLoan + "', 4.50, 0, FALSE, FALSE)");
             statement.execute("INSERT INTO fines VALUES ('" + UUID.randomUUID() + "', '"
-                    + openLoan + "', 1.00, TRUE, FALSE)");
+                    + openLoan + "', 1.00, 1.00, TRUE, FALSE)");
         }
         reports = new JdbcCirculationReportRepository(dataSource);
     }

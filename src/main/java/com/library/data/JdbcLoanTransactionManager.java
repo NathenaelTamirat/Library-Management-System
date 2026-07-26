@@ -54,8 +54,8 @@ public final class JdbcLoanTransactionManager implements LoanTransactionManager 
             WHERE isbn = ?
             """;
     private static final String INSERT_FINE = """
-            INSERT INTO fines (id, loan_id, amount, paid_status, issued_date)
-            VALUES (?, ?, ?, FALSE, ?)
+            INSERT INTO fines (id, loan_id, amount, amount_paid, paid_status, issued_date)
+            VALUES (?, ?, ?, 0, FALSE, ?)
             """;
     private static final String FIND_BY_ID = """
             SELECT id, user_id, isbn, checkout_date, due_date, return_date, status, renewal_count

@@ -38,6 +38,23 @@ class FineServiceTest {
     }
 
     @Test
+    void staffCanRecordPartialFinePayments() throws Exception {
+        RecordingFines repository = new RecordingFines();
+        RecordingAudits audits = new RecordingAudits();
+        FineService service = new FineService(
+                repository, new AuthorizationService(), new AuditService(audits));
+        Librarian librarian = new Librarian(
+                UUID.randomUUID(), "Lib", "lib@example.edu", "hash", "AUD-1", false);
+        UUID fineId = UUID.randomUUID();
+
+        service.payPartial(librarian, fineId, new BigDecimal("1.25"));
+
+        assertEquals(fineId, repository.paidFineId);
+        assertEquals(new BigDecimal("1.25"), repository.partialPayment);
+        assertEquals("PAY_FINE_PARTIAL", audits.actions.get(0));
+    }
+
+    @Test
     void staffCanWaiveFinesButMembersCannot() throws Exception {
         RecordingFines repository = new RecordingFines();
         RecordingAudits audits = new RecordingAudits();
@@ -59,6 +76,7 @@ class FineServiceTest {
         private final java.util.Map<UUID, List<Fine>> unpaid = new java.util.HashMap<>();
         private UUID paidFineId;
         private UUID waivedFineId;
+        private BigDecimal partialPayment;
 
         @Override
         public Optional<Fine> findByLoanId(UUID loanId) {
@@ -78,6 +96,12 @@ class FineServiceTest {
         @Override
         public void markPaid(UUID fineId) {
             paidFineId = fineId;
+        }
+
+        @Override
+        public void payPartial(UUID fineId, BigDecimal payment) {
+            paidFineId = fineId;
+            partialPayment = payment;
         }
 
         @Override

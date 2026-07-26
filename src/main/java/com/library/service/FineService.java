@@ -33,7 +33,7 @@ public final class FineService {
 
     public BigDecimal unpaidBalance(User actor, UUID memberId) throws SQLException {
         return unpaidFinesFor(actor, memberId).stream()
-                .map(Fine::amount)
+                .map(Fine::remaining)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
@@ -41,6 +41,18 @@ public final class FineService {
         authorization.require(actor, Permission.MANAGE_LOANS);
         fines.markPaid(fineId);
         audit.record(actor.id(), "PAY_FINE", "{\"fineId\":\"" + fineId + "\"}");
+    }
+
+    public void payPartial(User actor, UUID fineId, BigDecimal payment) throws SQLException {
+        authorization.require(actor, Permission.MANAGE_LOANS);
+        if (payment == null || payment.signum() <= 0) {
+            throw new IllegalArgumentException("Payment must be positive");
+        }
+        fines.payPartial(fineId, payment);
+        audit.record(
+                actor.id(),
+                "PAY_FINE_PARTIAL",
+                "{\"fineId\":\"" + fineId + "\",\"amount\":\"" + payment.toPlainString() + "\"}");
     }
 
     public void waive(User actor, UUID fineId) throws SQLException {

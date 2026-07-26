@@ -65,6 +65,7 @@ class JdbcLoanTransactionManagerTest {
                         id UUID PRIMARY KEY,
                         loan_id UUID NOT NULL UNIQUE REFERENCES loans(id),
                         amount DECIMAL(12, 2) NOT NULL,
+                        amount_paid DECIMAL(12, 2) NOT NULL DEFAULT 0,
                         paid_status BOOLEAN NOT NULL,
                         issued_date DATE NOT NULL
                     )

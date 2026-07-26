@@ -56,7 +56,8 @@ public final class FinesController {
                 super.updateItem(fine, empty);
                 setText(empty || fine == null
                         ? null
-                        : "%s — loan %s (issued %s)".formatted(
+                        : "%s remaining (of %s) — loan %s (issued %s)".formatted(
+                                fine.remaining().toPlainString(),
                                 fine.amount().toPlainString(),
                                 fine.loanId(),
                                 fine.issuedDate()));
@@ -78,7 +79,7 @@ public final class FinesController {
             List<Fine> unpaid = task.getValue();
             finesList.setItems(FXCollections.observableArrayList(unpaid));
             BigDecimal balance = unpaid.stream()
-                    .map(Fine::amount)
+                    .map(Fine::remaining)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             balanceLabel.setText("Balance: " + balance.toPlainString());
             statusLabel.setText(unpaid.size() + " unpaid fine(s)");
