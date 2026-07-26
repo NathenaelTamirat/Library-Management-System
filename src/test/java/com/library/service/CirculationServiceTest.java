@@ -117,10 +117,18 @@ class CirculationServiceTest {
                 UUID userId,
                 String isbn,
                 LocalDate checkoutDate,
-                LocalDate dueDate) {
+                LocalDate dueDate,
+                int borrowingLimit) {
             calls++;
             this.checkoutDate = checkoutDate;
             this.dueDate = dueDate;
+            long active = loans.values().stream()
+                    .filter(loan -> loan.userId().equals(userId))
+                    .filter(loan -> loan.status() != LoanStatus.RETURNED)
+                    .count();
+            if (active >= borrowingLimit) {
+                throw new IllegalStateException("Borrowing limit reached");
+            }
             Loan loan = new Loan(UUID.randomUUID(), userId, isbn, checkoutDate, dueDate);
             loans.put(loan.id(), loan);
             return loan;

@@ -45,7 +45,8 @@ public final class CirculationService {
                 member.id(),
                 isbn,
                 checkoutDate,
-                checkoutDate.plusDays(loanDays));
+                checkoutDate.plusDays(loanDays),
+                member.borrowingLimit());
         member.addLoan(loan);
         audit.record(
                 member.id(),

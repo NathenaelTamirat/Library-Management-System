@@ -89,7 +89,8 @@ class JdbcLoanTransactionManagerTest {
                         userId,
                         "9780134685991",
                         LocalDate.of(2026, 7, 26),
-                        LocalDate.of(2026, 8, 9));
+                        LocalDate.of(2026, 8, 9),
+                        5);
                 return true;
             } catch (SQLException unavailable) {
                 return false;
@@ -121,10 +122,36 @@ class JdbcLoanTransactionManagerTest {
                 userId,
                 "9780134685991",
                 LocalDate.of(2026, 7, 26),
-                LocalDate.of(2026, 8, 9)));
+                LocalDate.of(2026, 8, 9),
+                5));
 
         assertEquals(0, scalar("SELECT COUNT(*) FROM loans"));
         assertEquals(1, scalar("SELECT available_copies FROM books"));
+    }
+
+    @Test
+    void checkoutRejectsWhenDatabaseAlreadyAtBorrowingLimit() throws Exception {
+        try (Connection connection = dataSource.getConnection();
+             Statement statement = connection.createStatement()) {
+            statement.execute("INSERT INTO books (isbn, available_copies) VALUES ('9780321356680', 2)");
+        }
+        transactions.checkout(
+                userId,
+                "9780134685991",
+                LocalDate.of(2026, 7, 26),
+                LocalDate.of(2026, 8, 9),
+                1);
+
+        SQLException failure = assertThrows(SQLException.class, () -> transactions.checkout(
+                userId,
+                "9780321356680",
+                LocalDate.of(2026, 7, 26),
+                LocalDate.of(2026, 8, 9),
+                1));
+
+        assertTrue(failure.getMessage().contains("Borrowing limit reached"));
+        assertEquals(1, scalar("SELECT COUNT(*) FROM loans"));
+        assertEquals(2, scalar("SELECT available_copies FROM books WHERE isbn = '9780321356680'"));
     }
 
     @Test
@@ -133,7 +160,8 @@ class JdbcLoanTransactionManagerTest {
                 userId,
                 "9780134685991",
                 LocalDate.of(2026, 7, 1),
-                LocalDate.of(2026, 7, 10));
+                LocalDate.of(2026, 7, 10),
+                5);
         assertEquals(0, scalar("SELECT available_copies FROM books"));
 
         ReturnReceipt receipt = transactions.returnLoan(loan.id(), LocalDate.of(2026, 7, 16));
@@ -151,7 +179,8 @@ class JdbcLoanTransactionManagerTest {
                 userId,
                 "9780134685991",
                 LocalDate.of(2026, 7, 1),
-                LocalDate.of(2026, 7, 20));
+                LocalDate.of(2026, 7, 20),
+                5);
 
         ReturnReceipt receipt = transactions.returnLoan(loan.id(), LocalDate.of(2026, 7, 15));
 

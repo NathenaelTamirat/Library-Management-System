@@ -8,8 +8,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface LoanTransactionManager {
-    Loan checkout(UUID userId, String isbn, LocalDate checkoutDate, LocalDate dueDate)
-            throws SQLException;
+    Loan checkout(
+            UUID userId,
+            String isbn,
+            LocalDate checkoutDate,
+            LocalDate dueDate,
+            int borrowingLimit) throws SQLException;
 
     ReturnReceipt returnLoan(UUID loanId, LocalDate returnDate) throws SQLException;
 

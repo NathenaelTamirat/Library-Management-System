@@ -62,6 +62,11 @@ public final class JdbcLoanTransactionManager implements LoanTransactionManager 
             ORDER BY checkout_date
             LIMIT 1
             """;
+    private static final String COUNT_ACTIVE_LOANS = """
+            SELECT COUNT(*)
+            FROM loans
+            WHERE user_id = ? AND status IN ('ACTIVE', 'OVERDUE')
+            """;
 
     private final DataSource dataSource;
 
@@ -70,13 +75,21 @@ public final class JdbcLoanTransactionManager implements LoanTransactionManager 
     }
 
     @Override
-    public Loan checkout(UUID userId, String isbn, LocalDate checkoutDate, LocalDate dueDate)
-            throws SQLException {
+    public Loan checkout(
+            UUID userId,
+            String isbn,
+            LocalDate checkoutDate,
+            LocalDate dueDate,
+            int borrowingLimit) throws SQLException {
+        if (borrowingLimit < 1) {
+            throw new IllegalArgumentException("Borrowing limit must be positive");
+        }
         UUID loanId = UUID.randomUUID();
         try (Connection connection = dataSource.getConnection()) {
             connection.setAutoCommit(false);
             try {
                 lockAvailableBook(connection, isbn);
+                enforceBorrowingLimit(connection, userId, borrowingLimit);
                 insertLoan(connection, loanId, userId, isbn, checkoutDate, dueDate);
                 decrementInventory(connection, isbn);
                 connection.commit();
@@ -142,6 +155,19 @@ public final class JdbcLoanTransactionManager implements LoanTransactionManager 
             statement.setString(1, isbn);
             try (ResultSet results = statement.executeQuery()) {
                 return results.next() ? Optional.of(mapLoan(results)) : Optional.empty();
+            }
+        }
+    }
+
+    private static void enforceBorrowingLimit(
+            Connection connection, UUID userId, int borrowingLimit) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(COUNT_ACTIVE_LOANS)) {
+            statement.setObject(1, userId);
+            try (ResultSet results = statement.executeQuery()) {
+                results.next();
+                if (results.getInt(1) >= borrowingLimit) {
+                    throw new SQLException("Borrowing limit reached: " + borrowingLimit);
+                }
             }
         }
     }
