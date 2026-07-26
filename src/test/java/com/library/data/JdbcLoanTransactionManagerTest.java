@@ -44,6 +44,7 @@ class JdbcLoanTransactionManagerTest {
             statement.execute("""
                     CREATE TABLE books (
                         isbn VARCHAR(20) PRIMARY KEY,
+                        total_copies INTEGER NOT NULL,
                         available_copies INTEGER NOT NULL CHECK (available_copies >= 0)
                     )
                     """);
@@ -69,7 +70,8 @@ class JdbcLoanTransactionManagerTest {
                     )
                     """);
             statement.execute("INSERT INTO users (id) VALUES ('" + userId + "')");
-            statement.execute("INSERT INTO books (isbn, available_copies) VALUES ('9780134685991', 1)");
+            statement.execute(
+                    "INSERT INTO books (isbn, total_copies, available_copies) VALUES ('9780134685991', 1, 1)");
         }
         transactions = new JdbcLoanTransactionManager(dataSource);
         executor = Executors.newFixedThreadPool(2);
@@ -134,7 +136,7 @@ class JdbcLoanTransactionManagerTest {
     void checkoutRejectsWhenDatabaseAlreadyAtBorrowingLimit() throws Exception {
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement()) {
-            statement.execute("INSERT INTO books (isbn, available_copies) VALUES ('9780321356680', 2)");
+                    statement.execute("INSERT INTO books (isbn, total_copies, available_copies) VALUES ('9780321356680', 2, 2)");
         }
         transactions.checkout(
                 userId,
@@ -175,7 +177,7 @@ class JdbcLoanTransactionManagerTest {
     }
 
     @Test
-    void markLostCreatesReplacementFineWithoutRestoringInventory() throws Exception {
+    void markLostCreatesReplacementFineAndDecrementsTotalCopies() throws Exception {
         Loan loan = transactions.checkout(
                 userId,
                 "9780134685991",
@@ -183,12 +185,14 @@ class JdbcLoanTransactionManagerTest {
                 LocalDate.of(2026, 7, 15),
                 5);
         assertEquals(0, scalar("SELECT available_copies FROM books"));
+        assertEquals(1, scalar("SELECT total_copies FROM books"));
 
         Loan lost = transactions.markLost(
                 loan.id(), new BigDecimal("50.00"), LocalDate.of(2026, 7, 26));
 
         assertEquals(LoanStatus.LOST, lost.status());
         assertEquals(0, scalar("SELECT available_copies FROM books"));
+        assertEquals(0, scalar("SELECT total_copies FROM books"));
         assertEquals(1, scalar("SELECT COUNT(*) FROM fines"));
         assertEquals(0, scalar("SELECT COUNT(*) FROM loans WHERE status IN ('ACTIVE', 'OVERDUE')"));
     }

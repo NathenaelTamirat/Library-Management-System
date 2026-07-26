@@ -84,6 +84,11 @@ public final class JdbcLoanTransactionManager implements LoanTransactionManager 
             SET status = 'LOST'
             WHERE id = ? AND status IN ('ACTIVE', 'OVERDUE')
             """;
+    private static final String DECREMENT_TOTAL = """
+            UPDATE books
+            SET total_copies = total_copies - 1
+            WHERE isbn = ? AND total_copies > available_copies
+            """;
     private static final String COUNT_OPEN_BY_ISBN = """
             SELECT COUNT(*)
             FROM loans
@@ -183,6 +188,14 @@ public final class JdbcLoanTransactionManager implements LoanTransactionManager 
                     statement.setObject(1, loanId);
                     if (statement.executeUpdate() != 1) {
                         throw new SQLException("Loan could not be marked lost: " + loanId);
+                    }
+                }
+                lockBook(connection, loan.isbn());
+                try (PreparedStatement statement = connection.prepareStatement(DECREMENT_TOTAL)) {
+                    statement.setString(1, loan.isbn());
+                    if (statement.executeUpdate() != 1) {
+                        throw new SQLException(
+                                "Inventory could not be reduced for lost loan: " + loan.isbn());
                     }
                 }
                 Fine fine = new Fine(UUID.randomUUID(), loanId, replacementFine, false, issuedDate);
