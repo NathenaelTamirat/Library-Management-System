@@ -12,10 +12,15 @@ import java.util.Optional;
 public final class CatalogService {
     private final BookRepository books;
     private final AuthorizationService authorization;
+    private final AuditService audit;
 
-    public CatalogService(BookRepository books, AuthorizationService authorization) {
+    public CatalogService(
+            BookRepository books,
+            AuthorizationService authorization,
+            AuditService audit) {
         this.books = books;
         this.authorization = authorization;
+        this.audit = audit;
     }
 
     public List<Book> search(String query) throws SQLException {
@@ -33,6 +38,7 @@ public final class CatalogService {
             throw new IllegalStateException("Book already exists: " + book.isbn());
         }
         books.save(book);
+        audit.record(actor.id(), "ADD_BOOK", "{\"isbn\":\"" + book.isbn() + "\"}");
         return book;
     }
 
@@ -42,11 +48,13 @@ public final class CatalogService {
             throw new IllegalStateException("Book does not exist: " + book.isbn());
         }
         books.update(book);
+        audit.record(actor.id(), "UPDATE_BOOK", "{\"isbn\":\"" + book.isbn() + "\"}");
         return book;
     }
 
     public void delete(User actor, String isbn) throws SQLException {
         authorization.require(actor.role(), Permission.MANAGE_CATALOG);
         books.delete(isbn);
+        audit.record(actor.id(), "DELETE_BOOK", "{\"isbn\":\"" + isbn + "\"}");
     }
 }

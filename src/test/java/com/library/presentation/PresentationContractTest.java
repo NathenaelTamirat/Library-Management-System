@@ -7,9 +7,11 @@ import com.library.domain.Book;
 import com.library.domain.Librarian;
 import com.library.domain.Member;
 import com.library.security.AuthorizationService;
+import com.library.service.AuditService;
 import com.library.service.CatalogService;
 import java.io.InputStream;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,7 +24,8 @@ class PresentationContractTest {
     void catalogServiceNormalizesInputAndReturnsRepositoryResults() throws Exception {
         Book expected = new Book("9780134685991", "Effective Java", "Joshua Bloch", 2, 1);
         RecordingRepository repository = new RecordingRepository(expected);
-        CatalogService catalog = new CatalogService(repository, new AuthorizationService());
+        CatalogService catalog = new CatalogService(
+                repository, new AuthorizationService(), silentAudit());
 
         assertEquals(List.of(expected), catalog.search("  Bloch  "));
         assertEquals("Bloch", repository.lastQuery);
@@ -32,7 +35,8 @@ class PresentationContractTest {
     void catalogWriteOperationsAreAllowedForLibrariansAndDeniedForMembers() throws Exception {
         Book expected = new Book("9780134685991", "Effective Java", "Joshua Bloch", 2, 1);
         RecordingRepository repository = new RecordingRepository(expected);
-        CatalogService catalog = new CatalogService(repository, new AuthorizationService());
+        CatalogService catalog = new CatalogService(
+                repository, new AuthorizationService(), silentAudit());
         Member member = new Member(UUID.randomUUID(), "Member", "member@example.edu", "hash", 5);
         Librarian librarian = new Librarian(
                 UUID.randomUUID(), "Librarian", "librarian@example.edu", "hash", "AUD-1", false);
@@ -52,7 +56,8 @@ class PresentationContractTest {
     void catalogDeletionIsAllowedForLibrariansAndDeniedForMembers() throws Exception {
         Book expected = new Book("9780134685991", "Effective Java", "Joshua Bloch", 2, 1);
         RecordingRepository repository = new RecordingRepository(expected);
-        CatalogService catalog = new CatalogService(repository, new AuthorizationService());
+        CatalogService catalog = new CatalogService(
+                repository, new AuthorizationService(), silentAudit());
         Member member = new Member(UUID.randomUUID(), "Member", "member@example.edu", "hash", 5);
         Librarian librarian = new Librarian(
                 UUID.randomUUID(), "Librarian", "librarian@example.edu", "hash", "AUD-1", false);
@@ -121,6 +126,11 @@ class PresentationContractTest {
             factory.setNamespaceAware(true);
             return factory.newDocumentBuilder().parse(input);
         }
+    }
+
+    private static AuditService silentAudit() {
+        return new AuditService((userId, action, details) -> {
+        });
     }
 
     private static final class RecordingRepository implements BookRepository {

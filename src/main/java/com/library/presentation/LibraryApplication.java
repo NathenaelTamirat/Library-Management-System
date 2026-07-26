@@ -1,6 +1,7 @@
 package com.library.presentation;
 
 import com.library.data.DataSourceFactory;
+import com.library.data.JdbcAuditRepository;
 import com.library.data.JdbcBookRepository;
 import com.library.data.JdbcLoanTransactionManager;
 import com.library.data.JdbcUserLookup;
@@ -8,6 +9,7 @@ import com.library.domain.User;
 import com.library.security.Argon2PasswordHasher;
 import com.library.security.AuthenticationService;
 import com.library.security.AuthorizationService;
+import com.library.service.AuditService;
 import com.library.service.CatalogService;
 import com.library.service.CirculationService;
 import com.zaxxer.hikari.HikariDataSource;
@@ -36,10 +38,12 @@ public final class LibraryApplication extends Application {
                 Integer.parseInt(System.getenv().getOrDefault("LIBRARY_DB_POOL_SIZE", "10")));
         dataSource = DataSourceFactory.create(config);
         authorization = new AuthorizationService();
-        catalog = new CatalogService(new JdbcBookRepository(dataSource), authorization);
+        AuditService audit = new AuditService(new JdbcAuditRepository(dataSource, true));
+        catalog = new CatalogService(new JdbcBookRepository(dataSource), authorization, audit);
         circulation = new CirculationService(
                 new JdbcLoanTransactionManager(dataSource),
                 authorization,
+                audit,
                 Clock.systemDefaultZone(),
                 14);
         AuthenticationService authentication = new AuthenticationService(

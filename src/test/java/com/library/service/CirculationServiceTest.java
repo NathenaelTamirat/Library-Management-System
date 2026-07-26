@@ -12,7 +12,9 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,9 +24,10 @@ class CirculationServiceTest {
     @Test
     void checkoutUsesConfiguredPeriodAndAddsTheCommittedLoanToMember() throws Exception {
         RecordingTransactions transactions = new RecordingTransactions();
+        RecordingAuditRepository audits = new RecordingAuditRepository();
         Clock clock = Clock.fixed(Instant.parse("2026-07-26T00:00:00Z"), ZoneOffset.UTC);
         CirculationService circulation = new CirculationService(
-                transactions, new AuthorizationService(), clock, 21);
+                transactions, new AuthorizationService(), new AuditService(audits), clock, 21);
         Member member = new Member(
                 UUID.randomUUID(), "Ada", "ada@example.edu", "hash", 2);
 
@@ -33,14 +36,17 @@ class CirculationServiceTest {
         assertEquals(LocalDate.of(2026, 7, 26), transactions.checkoutDate);
         assertEquals(LocalDate.of(2026, 8, 16), transactions.dueDate);
         assertEquals(loan, member.activeLoans().get(0));
+        assertEquals("CHECKOUT", audits.actions.get(0));
     }
 
     @Test
     void checkoutStopsBeforePersistenceWhenBorrowingLimitIsReached() throws Exception {
         RecordingTransactions transactions = new RecordingTransactions();
+        RecordingAuditRepository audits = new RecordingAuditRepository();
         CirculationService circulation = new CirculationService(
                 transactions,
                 new AuthorizationService(),
+                new AuditService(audits),
                 Clock.systemUTC(),
                 14);
         Member member = new Member(
@@ -50,14 +56,16 @@ class CirculationServiceTest {
         assertThrows(IllegalStateException.class,
                 () -> circulation.checkout(member, "9780321356680"));
         assertEquals(1, transactions.calls);
+        assertEquals(1, audits.actions.size());
     }
 
     @Test
     void memberCanReturnOwnLoanAndFreesBorrowingCapacity() throws Exception {
         RecordingTransactions transactions = new RecordingTransactions();
+        RecordingAuditRepository audits = new RecordingAuditRepository();
         Clock clock = Clock.fixed(Instant.parse("2026-07-26T00:00:00Z"), ZoneOffset.UTC);
         CirculationService circulation = new CirculationService(
-                transactions, new AuthorizationService(), clock, 14);
+                transactions, new AuthorizationService(), new AuditService(audits), clock, 14);
         Member member = new Member(
                 UUID.randomUUID(), "Ada", "ada@example.edu", "hash", 1);
         Loan loan = circulation.checkout(member, "9780134685991");
@@ -67,14 +75,16 @@ class CirculationServiceTest {
         assertEquals(LoanStatus.RETURNED, receipt.loan().status());
         assertTrue(member.activeLoans().isEmpty());
         assertTrue(member.canBorrow());
+        assertEquals(List.of("CHECKOUT", "RETURN"), audits.actions);
     }
 
     @Test
     void memberCannotReturnAnotherMembersLoan() throws Exception {
         RecordingTransactions transactions = new RecordingTransactions();
+        RecordingAuditRepository audits = new RecordingAuditRepository();
         Clock clock = Clock.fixed(Instant.parse("2026-07-26T00:00:00Z"), ZoneOffset.UTC);
         CirculationService circulation = new CirculationService(
-                transactions, new AuthorizationService(), clock, 14);
+                transactions, new AuthorizationService(), new AuditService(audits), clock, 14);
         Member owner = new Member(
                 UUID.randomUUID(), "Ada", "ada@example.edu", "hash", 1);
         Member stranger = new Member(
@@ -83,6 +93,16 @@ class CirculationServiceTest {
 
         assertThrows(SecurityException.class, () -> circulation.returnLoan(stranger, loan.id()));
         assertEquals(0, transactions.returnCalls);
+        assertEquals(List.of("CHECKOUT"), audits.actions);
+    }
+
+    private static final class RecordingAuditRepository implements com.library.data.AuditRepository {
+        private final List<String> actions = new ArrayList<>();
+
+        @Override
+        public void record(Optional<UUID> userId, String action, String details) {
+            actions.add(action);
+        }
     }
 
     private static final class RecordingTransactions implements LoanTransactionManager {
@@ -123,7 +143,7 @@ class CirculationServiceTest {
         public Optional<Loan> findActiveLoanByIsbn(String isbn) {
             return loans.values().stream()
                     .filter(loan -> loan.isbn().equals(isbn))
-                    .filter(loan -> loan.status() != com.library.domain.LoanStatus.RETURNED)
+                    .filter(loan -> loan.status() != LoanStatus.RETURNED)
                     .findFirst();
         }
     }

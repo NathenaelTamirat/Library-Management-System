@@ -15,12 +15,14 @@ import java.util.UUID;
 public final class CirculationService {
     private final LoanTransactionManager transactions;
     private final AuthorizationService authorization;
+    private final AuditService audit;
     private final Clock clock;
     private final int loanDays;
 
     public CirculationService(
             LoanTransactionManager transactions,
             AuthorizationService authorization,
+            AuditService audit,
             Clock clock,
             int loanDays) {
         if (loanDays < 1) {
@@ -28,6 +30,7 @@ public final class CirculationService {
         }
         this.transactions = transactions;
         this.authorization = authorization;
+        this.audit = audit;
         this.clock = clock;
         this.loanDays = loanDays;
     }
@@ -44,6 +47,10 @@ public final class CirculationService {
                 checkoutDate,
                 checkoutDate.plusDays(loanDays));
         member.addLoan(loan);
+        audit.record(
+                member.id(),
+                "CHECKOUT",
+                "{\"loanId\":\"" + loan.id() + "\",\"isbn\":\"" + isbn + "\"}");
         return loan;
     }
 
@@ -56,6 +63,12 @@ public final class CirculationService {
         if (actor instanceof Member member) {
             member.removeActiveLoan(loanId);
         }
+        audit.record(
+                actor.id(),
+                "RETURN",
+                "{\"loanId\":\"" + loanId + "\",\"fine\":"
+                        + receipt.fine().map(fine -> fine.amount().toPlainString()).orElse("0")
+                        + "}");
         return receipt;
     }
 
