@@ -15,10 +15,11 @@ public final class Loan {
     private final UUID userId;
     private final String isbn;
     private final LocalDate checkoutDate;
-    private final LocalDate dueDate;
     private final Clock clock;
+    private LocalDate dueDate;
     private LocalDate returnDate;
     private LoanStatus status;
+    private int renewalCount;
 
     public Loan(UUID id, UUID userId, String isbn, LocalDate checkoutDate, LocalDate dueDate) {
         this(id, userId, isbn, checkoutDate, dueDate, Clock.systemDefaultZone());
@@ -35,6 +36,7 @@ public final class Loan {
             throw new IllegalArgumentException("Due date cannot precede checkout date");
         }
         this.status = LoanStatus.ACTIVE;
+        this.renewalCount = 0;
     }
 
     public UUID id() {
@@ -57,6 +59,10 @@ public final class Loan {
         return dueDate;
     }
 
+    public int renewalCount() {
+        return renewalCount;
+    }
+
     public LocalDate returnDate() {
         return returnDate;
     }
@@ -66,6 +72,41 @@ public final class Loan {
             return LoanStatus.OVERDUE;
         }
         return status;
+    }
+
+    public void renew(LocalDate newDueDate) {
+        LoanStatus current = status();
+        if (current == LoanStatus.RETURNED || current == LoanStatus.LOST) {
+            throw new IllegalStateException("Cannot renew a " + current + " loan");
+        }
+        if (newDueDate.isBefore(dueDate) || newDueDate.isEqual(dueDate)) {
+            throw new IllegalArgumentException("Renewal must extend the due date");
+        }
+        dueDate = newDueDate;
+        renewalCount++;
+        if (status == LoanStatus.OVERDUE) {
+            status = LoanStatus.ACTIVE;
+        }
+    }
+
+    public void markLost() {
+        if (status == LoanStatus.RETURNED || status == LoanStatus.LOST) {
+            throw new IllegalStateException("Cannot mark a " + status + " loan as lost");
+        }
+        status = LoanStatus.LOST;
+    }
+
+    public void markOverdue() {
+        if (status == LoanStatus.ACTIVE) {
+            status = LoanStatus.OVERDUE;
+        }
+    }
+
+    public void restoreRenewalCount(int count) {
+        if (count < 0) {
+            throw new IllegalArgumentException("Renewal count cannot be negative");
+        }
+        renewalCount = count;
     }
 
     public BigDecimal calculateOverdueFine() {

@@ -101,6 +101,23 @@ class CirculationServiceTest {
     }
 
     @Test
+    void memberCanRenewOwnLoan() throws Exception {
+        RecordingTransactions transactions = new RecordingTransactions();
+        RecordingAuditRepository audits = new RecordingAuditRepository();
+        Clock clock = Clock.fixed(Instant.parse("2026-07-26T00:00:00Z"), ZoneOffset.UTC);
+        CirculationService circulation = service(transactions, audits, clock, new RecordingFines(), 14);
+        Member member = new Member(
+                UUID.randomUUID(), "Ada", "ada@example.edu", "hash", 1);
+        Loan loan = circulation.checkout(member, "9780134685991");
+
+        Loan renewed = circulation.renew(member, loan.id());
+
+        assertEquals(LocalDate.of(2026, 8, 23), renewed.dueDate());
+        assertEquals(1, renewed.renewalCount());
+        assertEquals(List.of("CHECKOUT", "RENEW"), audits.actions);
+    }
+
+    @Test
     void memberCannotReturnAnotherMembersLoan() throws Exception {
         RecordingTransactions transactions = new RecordingTransactions();
         RecordingAuditRepository audits = new RecordingAuditRepository();
@@ -194,6 +211,13 @@ class CirculationServiceTest {
             Loan loan = loans.get(loanId);
             loan.markReturned(returnDate);
             return new ReturnReceipt(loan, Optional.empty());
+        }
+
+        @Override
+        public Loan renew(UUID loanId, LocalDate newDueDate) {
+            Loan loan = loans.get(loanId);
+            loan.renew(newDueDate);
+            return loan;
         }
 
         @Override

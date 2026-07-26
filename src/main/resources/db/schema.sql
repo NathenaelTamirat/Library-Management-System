@@ -41,9 +41,12 @@ CREATE TABLE IF NOT EXISTS loans (
     due_date DATE NOT NULL,
     return_date DATE,
     status loan_status NOT NULL DEFAULT 'ACTIVE',
+    renewal_count INTEGER NOT NULL DEFAULT 0 CHECK (renewal_count >= 0),
     CHECK (due_date >= checkout_date),
     CHECK (return_date IS NULL OR return_date >= checkout_date)
 );
+
+ALTER TABLE loans ADD COLUMN IF NOT EXISTS renewal_count INTEGER NOT NULL DEFAULT 0;
 
 CREATE UNIQUE INDEX IF NOT EXISTS one_active_loan_per_member_book
     ON loans (user_id, isbn)

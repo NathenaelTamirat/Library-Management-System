@@ -55,7 +55,8 @@ class JdbcLoanTransactionManagerTest {
                         checkout_date DATE NOT NULL,
                         due_date DATE NOT NULL,
                         return_date DATE,
-                        status VARCHAR(20) NOT NULL
+                        status VARCHAR(20) NOT NULL,
+                        renewal_count INTEGER NOT NULL DEFAULT 0
                     )
                     """);
             statement.execute("""
@@ -171,6 +172,25 @@ class JdbcLoanTransactionManagerTest {
         assertEquals(1, scalar("SELECT COUNT(*) FROM fines"));
         assertEquals(new BigDecimal("3.00"), receipt.fine().orElseThrow().amount());
         assertTrue(transactions.findActiveLoanByIsbn("9780134685991").isEmpty());
+    }
+
+    @Test
+    void renewExtendsDueDateUnderRowLock() throws Exception {
+        Loan loan = transactions.checkout(
+                userId,
+                "9780134685991",
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 7, 15),
+                5);
+
+        Loan renewed = transactions.renew(loan.id(), LocalDate.of(2026, 7, 29));
+
+        assertEquals(LocalDate.of(2026, 7, 29), renewed.dueDate());
+        assertEquals(1, renewed.renewalCount());
+        assertEquals(1, scalar("SELECT renewal_count FROM loans"));
+        assertEquals(
+                LocalDate.of(2026, 7, 29),
+                transactions.findById(loan.id()).orElseThrow().dueDate());
     }
 
     @Test

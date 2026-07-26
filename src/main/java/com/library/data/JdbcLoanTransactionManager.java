@@ -22,8 +22,13 @@ public final class JdbcLoanTransactionManager implements LoanTransactionManager 
             FOR UPDATE
             """;
     private static final String INSERT_LOAN = """
-            INSERT INTO loans (id, user_id, isbn, checkout_date, due_date, status)
-            VALUES (?, ?, ?, ?, ?, 'ACTIVE')
+            INSERT INTO loans (id, user_id, isbn, checkout_date, due_date, status, renewal_count)
+            VALUES (?, ?, ?, ?, ?, 'ACTIVE', 0)
+            """;
+    private static final String RENEW_LOAN = """
+            UPDATE loans
+            SET due_date = ?, renewal_count = renewal_count + 1, status = 'ACTIVE'
+            WHERE id = ? AND status IN ('ACTIVE', 'OVERDUE')
             """;
     private static final String DECREMENT_BOOK = """
             UPDATE books
@@ -31,7 +36,7 @@ public final class JdbcLoanTransactionManager implements LoanTransactionManager 
             WHERE isbn = ? AND available_copies > 0
             """;
     private static final String LOCK_LOAN = """
-            SELECT id, user_id, isbn, checkout_date, due_date, return_date, status
+            SELECT id, user_id, isbn, checkout_date, due_date, return_date, status, renewal_count
             FROM loans
             WHERE id = ?
             FOR UPDATE
@@ -51,12 +56,12 @@ public final class JdbcLoanTransactionManager implements LoanTransactionManager 
             VALUES (?, ?, ?, FALSE, ?)
             """;
     private static final String FIND_BY_ID = """
-            SELECT id, user_id, isbn, checkout_date, due_date, return_date, status
+            SELECT id, user_id, isbn, checkout_date, due_date, return_date, status, renewal_count
             FROM loans
             WHERE id = ?
             """;
     private static final String FIND_ACTIVE_BY_ISBN = """
-            SELECT id, user_id, isbn, checkout_date, due_date, return_date, status
+            SELECT id, user_id, isbn, checkout_date, due_date, return_date, status, renewal_count
             FROM loans
             WHERE isbn = ? AND status IN ('ACTIVE', 'OVERDUE')
             ORDER BY checkout_date
@@ -94,6 +99,31 @@ public final class JdbcLoanTransactionManager implements LoanTransactionManager 
                 decrementInventory(connection, isbn);
                 connection.commit();
                 return new Loan(loanId, userId, isbn, checkoutDate, dueDate);
+            } catch (SQLException | RuntimeException failure) {
+                rollback(connection, failure);
+                throw failure;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        }
+    }
+
+    @Override
+    public Loan renew(UUID loanId, LocalDate newDueDate) throws SQLException {
+        try (Connection connection = dataSource.getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                Loan loan = lockLoan(connection, loanId);
+                loan.renew(newDueDate);
+                try (PreparedStatement statement = connection.prepareStatement(RENEW_LOAN)) {
+                    statement.setObject(1, newDueDate);
+                    statement.setObject(2, loanId);
+                    if (statement.executeUpdate() != 1) {
+                        throw new SQLException("Loan could not be renewed: " + loanId);
+                    }
+                }
+                connection.commit();
+                return loan;
             } catch (SQLException | RuntimeException failure) {
                 rollback(connection, failure);
                 throw failure;
@@ -272,9 +302,15 @@ public final class JdbcLoanTransactionManager implements LoanTransactionManager 
                 results.getString("isbn"),
                 results.getObject("checkout_date", LocalDate.class),
                 results.getObject("due_date", LocalDate.class));
+        loan.restoreRenewalCount(results.getInt("renewal_count"));
         LocalDate returnDate = results.getObject("return_date", LocalDate.class);
-        if (returnDate != null) {
+        String status = results.getString("status");
+        if ("LOST".equals(status)) {
+            loan.markLost();
+        } else if ("RETURNED".equals(status) && returnDate != null) {
             loan.markReturned(returnDate);
+        } else if ("OVERDUE".equals(status)) {
+            loan.markOverdue();
         }
         return loan;
     }

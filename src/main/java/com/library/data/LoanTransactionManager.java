@@ -17,6 +17,8 @@ public interface LoanTransactionManager {
 
     ReturnReceipt returnLoan(UUID loanId, LocalDate returnDate) throws SQLException;
 
+    Loan renew(UUID loanId, LocalDate newDueDate) throws SQLException;
+
     Optional<Loan> findById(UUID loanId) throws SQLException;
 
     Optional<Loan> findActiveLoanByIsbn(String isbn) throws SQLException;

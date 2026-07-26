@@ -86,13 +86,31 @@ public final class CirculationService {
         return returnLoan(actor, loan.id());
     }
 
+    public Loan renew(User actor, UUID loanId) throws SQLException {
+        Loan existing = transactions.findById(loanId)
+                .orElseThrow(() -> new IllegalStateException("Loan not found: " + loanId));
+        authorizeLoanOwnerOrStaff(actor, existing);
+        LocalDate today = LocalDate.now(clock);
+        LocalDate base = existing.dueDate().isAfter(today) ? existing.dueDate() : today;
+        Loan renewed = transactions.renew(loanId, base.plusDays(loanDays));
+        audit.record(
+                actor.id(),
+                "RENEW",
+                "{\"loanId\":\"" + loanId + "\",\"dueDate\":\"" + renewed.dueDate() + "\"}");
+        return renewed;
+    }
+
     private void authorizeReturn(User actor, Loan loan) {
+        authorizeLoanOwnerOrStaff(actor, loan);
+    }
+
+    private void authorizeLoanOwnerOrStaff(User actor, Loan loan) {
         if (authorization.isAllowed(actor.role(), Permission.MANAGE_LOANS)) {
             return;
         }
         authorization.require(actor.role(), Permission.BORROW_BOOK);
         if (!(actor instanceof Member member) || !loan.userId().equals(member.id())) {
-            throw new SecurityException("Members may only return their own loans");
+            throw new SecurityException("Members may only manage their own loans");
         }
     }
 }
