@@ -5,10 +5,12 @@ import com.library.data.JdbcAuditRepository;
 import com.library.data.JdbcBookRepository;
 import com.library.data.JdbcFineRepository;
 import com.library.data.JdbcHoldRepository;
+import com.library.data.JdbcLoanPolicyRepository;
 import com.library.data.JdbcLoanTransactionManager;
 import com.library.data.JdbcRecommendationRepository;
 import com.library.data.JdbcUserAdminRepository;
 import com.library.data.JdbcUserLookup;
+import com.library.domain.LoanPolicy;
 import com.library.domain.User;
 import com.library.security.Argon2PasswordHasher;
 import com.library.security.AuthenticationService;
@@ -18,10 +20,12 @@ import com.library.service.CatalogService;
 import com.library.service.CirculationService;
 import com.library.service.FineService;
 import com.library.service.HoldService;
+import com.library.service.LoanPolicyService;
 import com.library.service.RecommendationService;
 import com.library.service.UserAdminService;
 import com.zaxxer.hikari.HikariDataSource;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.time.Clock;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -37,6 +41,7 @@ public final class LibraryApplication extends Application {
     private FineService fines;
     private RecommendationService recommendations;
     private UserAdminService userAdmin;
+    private LoanPolicyService loanPolicies;
     private AuthorizationService authorization;
     private AuthenticationService authentication;
     private AuditService audit;
@@ -65,6 +70,14 @@ public final class LibraryApplication extends Application {
                 authorization,
                 audit,
                 Clock.systemUTC());
+        JdbcLoanPolicyRepository policyRepository = new JdbcLoanPolicyRepository(dataSource, true);
+        loanPolicies = new LoanPolicyService(policyRepository, authorization, audit);
+        LoanPolicy policy;
+        try {
+            policy = loanPolicies.current();
+        } catch (SQLException failure) {
+            throw new IllegalStateException("Unable to load loan policy", failure);
+        }
         circulation = new CirculationService(
                 loanTransactions,
                 fineRepository,
@@ -72,14 +85,15 @@ public final class LibraryApplication extends Application {
                 authorization,
                 audit,
                 Clock.systemDefaultZone(),
-                14);
+                policy.loanDays(),
+                policy.maxRenewals());
         fines = new FineService(fineRepository, authorization, audit);
         recommendations = new RecommendationService(
                 new JdbcRecommendationRepository(dataSource), authorization);
         Argon2PasswordHasher passwordHasher = new Argon2PasswordHasher();
         JdbcUserAdminRepository userAccounts = new JdbcUserAdminRepository(dataSource);
         authentication = new AuthenticationService(
-                new JdbcUserLookup(dataSource, 5),
+                new JdbcUserLookup(dataSource, policy.borrowLimit()),
                 userAccounts,
                 passwordHasher,
                 Clock.systemUTC());

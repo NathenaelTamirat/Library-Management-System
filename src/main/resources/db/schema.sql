@@ -94,6 +94,19 @@ CREATE INDEX IF NOT EXISTS holds_isbn_waiting_idx
     ON holds (isbn, placed_at)
     WHERE status IN ('WAITING', 'READY');
 
+CREATE TABLE IF NOT EXISTS library_policy (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    loan_days INTEGER NOT NULL CHECK (loan_days >= 1),
+    daily_fine NUMERIC(12, 2) NOT NULL CHECK (daily_fine >= 0),
+    replacement_fine NUMERIC(12, 2) NOT NULL CHECK (replacement_fine >= 0),
+    max_renewals INTEGER NOT NULL CHECK (max_renewals >= 0),
+    borrow_limit INTEGER NOT NULL CHECK (borrow_limit >= 1)
+);
+
+INSERT INTO library_policy (id, loan_days, daily_fine, replacement_fine, max_renewals, borrow_limit)
+VALUES (1, 14, 0.50, 50.00, 2, 5)
+ON CONFLICT (id) DO NOTHING;
+
 CREATE TABLE IF NOT EXISTS audit_log (
     id BIGSERIAL PRIMARY KEY,
     user_id UUID REFERENCES users(id),
