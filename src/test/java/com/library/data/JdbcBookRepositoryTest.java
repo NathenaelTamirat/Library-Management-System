@@ -28,11 +28,26 @@ class JdbcBookRepositoryTest {
                         author VARCHAR(300) NOT NULL,
                         total_copies INTEGER NOT NULL,
                         available_copies INTEGER NOT NULL,
+                        genre VARCHAR(100),
+                        publication_year INTEGER,
                         CHECK (available_copies BETWEEN 0 AND total_copies)
                     )
                     """);
         }
         repository = new JdbcBookRepository(dataSource);
+    }
+
+    @Test
+    void persistsMetadataAndSearchesByGenreOrYear() throws Exception {
+        Book book = new Book(
+                "9780134685991", "Effective Java", "Joshua Bloch", 1, 1, "Programming", 2018);
+        repository.save(book);
+
+        Book loaded = repository.findByIsbn(book.isbn()).orElseThrow();
+        assertEquals("Programming", loaded.genre());
+        assertEquals(2018, loaded.publicationYear());
+        assertEquals(List.of(book), repository.search("programming"));
+        assertEquals(List.of(book), repository.search("2018"));
     }
 
     @Test

@@ -32,11 +32,23 @@ CREATE TABLE IF NOT EXISTS books (
     author VARCHAR(300) NOT NULL,
     total_copies INTEGER NOT NULL CHECK (total_copies >= 0),
     available_copies INTEGER NOT NULL,
-    search_document TSVECTOR GENERATED ALWAYS AS (
-        to_tsvector('english', coalesce(title, '') || ' ' || coalesce(author, ''))
-    ) STORED,
+    genre VARCHAR(100),
+    publication_year INTEGER CHECK (
+        publication_year IS NULL OR (publication_year BETWEEN 0 AND 9999)),
     CHECK (available_copies >= 0 AND available_copies <= total_copies)
 );
+
+ALTER TABLE books ADD COLUMN IF NOT EXISTS genre VARCHAR(100);
+ALTER TABLE books ADD COLUMN IF NOT EXISTS publication_year INTEGER;
+
+DROP INDEX IF EXISTS books_search_idx;
+ALTER TABLE books DROP COLUMN IF EXISTS search_document;
+ALTER TABLE books ADD COLUMN search_document TSVECTOR GENERATED ALWAYS AS (
+    to_tsvector(
+        'english',
+        coalesce(title, '') || ' ' || coalesce(author, '') || ' ' || coalesce(genre, '')
+            || ' ' || coalesce(publication_year::text, ''))
+) STORED;
 
 CREATE INDEX IF NOT EXISTS books_search_idx ON books USING GIN (search_document);
 

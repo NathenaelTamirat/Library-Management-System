@@ -8,12 +8,26 @@ public final class Book {
     private String author;
     private int totalCopies;
     private int availableCopies;
+    private String genre;
+    private Integer publicationYear;
 
     public Book(String isbn, String title, String author, int totalCopies, int availableCopies) {
+        this(isbn, title, author, totalCopies, availableCopies, null, null);
+    }
+
+    public Book(
+            String isbn,
+            String title,
+            String author,
+            int totalCopies,
+            int availableCopies,
+            String genre,
+            Integer publicationYear) {
         this.isbn = requireText(isbn, "ISBN");
         this.title = requireText(title, "Title");
         this.author = requireText(author, "Author");
         setInventory(totalCopies, availableCopies);
+        setMetadata(genre, publicationYear);
     }
 
     public String isbn() {
@@ -34,6 +48,14 @@ public final class Book {
 
     public int availableCopies() {
         return availableCopies;
+    }
+
+    public String genre() {
+        return genre;
+    }
+
+    public Integer publicationYear() {
+        return publicationYear;
     }
 
     public boolean isAvailable() {
@@ -59,12 +81,27 @@ public final class Book {
         this.author = requireText(author, "Author");
     }
 
+    public void setMetadata(String genre, Integer publicationYear) {
+        this.genre = normalizeOptional(genre);
+        if (publicationYear != null && (publicationYear < 0 || publicationYear > 9999)) {
+            throw new IllegalArgumentException("Publication year must be between 0 and 9999");
+        }
+        this.publicationYear = publicationYear;
+    }
+
     private void setInventory(int totalCopies, int availableCopies) {
         if (totalCopies < 0 || availableCopies < 0 || availableCopies > totalCopies) {
             throw new IllegalArgumentException("Inventory must satisfy 0 <= available <= total");
         }
         this.totalCopies = totalCopies;
         this.availableCopies = availableCopies;
+    }
+
+    private static String normalizeOptional(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.strip();
     }
 
     private static String requireText(String value, String field) {

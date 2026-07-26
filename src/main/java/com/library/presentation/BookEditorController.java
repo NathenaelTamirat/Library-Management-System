@@ -29,6 +29,10 @@ public final class BookEditorController {
     @FXML
     private TextField authorField;
     @FXML
+    private TextField genreField;
+    @FXML
+    private Spinner<Integer> yearSpinner;
+    @FXML
     private Spinner<Integer> copiesSpinner;
     @FXML
     private Button saveButton;
@@ -50,12 +54,17 @@ public final class BookEditorController {
     private void initialize() {
         copiesSpinner.setValueFactory(
                 new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 500, 1));
+        yearSpinner.setValueFactory(
+                new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 9999, 0));
         existing.ifPresent(book -> {
             titleLabel.setText("Edit book");
             isbnField.setText(book.isbn());
             isbnField.setDisable(true);
             titleField.setText(book.title());
             authorField.setText(book.author());
+            genreField.setText(book.genre() == null ? "" : book.genre());
+            yearSpinner.getValueFactory().setValue(
+                    book.publicationYear() == null ? 0 : book.publicationYear());
             copiesSpinner.getValueFactory().setValue(book.totalCopies());
         });
     }
@@ -67,12 +76,18 @@ public final class BookEditorController {
                 .map(book -> book.availableCopies() + (totalCopies - book.totalCopies()))
                 .orElse(totalCopies);
         availableCopies = Math.max(0, Math.min(availableCopies, totalCopies));
+        Integer year = yearSpinner.getValue();
+        if (year == null || year == 0) {
+            year = null;
+        }
         Book book = new Book(
                 isbnField.getText(),
                 titleField.getText(),
                 authorField.getText(),
                 totalCopies,
-                availableCopies);
+                availableCopies,
+                genreField.getText(),
+                year);
         Task<Book> saveTask = new Task<>() {
             @Override
             protected Book call() throws Exception {

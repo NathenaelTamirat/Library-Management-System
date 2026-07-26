@@ -27,10 +27,18 @@
                GridPane.columnIndex="0" GridPane.rowIndex="2"/>
         <TextField fx:id="authorField" accessibleText="Author"
                    GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-        <Label text="_Copies" mnemonicParsing="true" labelFor="$copiesSpinner"
+        <Label text="_Genre" mnemonicParsing="true" labelFor="$genreField"
                GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+        <TextField fx:id="genreField" accessibleText="Genre"
+                   GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+        <Label text="_Year" mnemonicParsing="true" labelFor="$yearSpinner"
+               GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+        <Spinner fx:id="yearSpinner" editable="true" accessibleText="Publication year"
+                 GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+        <Label text="_Copies" mnemonicParsing="true" labelFor="$copiesSpinner"
+               GridPane.columnIndex="0" GridPane.rowIndex="5"/>
         <Spinner fx:id="copiesSpinner" editable="true" accessibleText="Copies"
-                 GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                 GridPane.columnIndex="1" GridPane.rowIndex="5"/>
     </GridPane>
     <Label fx:id="errorLabel" styleClass="error" accessibleText="Editor status"/>
     <HBox spacing="10">
