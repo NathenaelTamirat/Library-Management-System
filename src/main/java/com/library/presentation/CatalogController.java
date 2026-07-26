@@ -31,6 +31,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -44,6 +45,7 @@ public final class CatalogController {
     private final AuditService audits;
     private final UserAdminService userAdmin;
     private final AuthenticationService authentication;
+    private final AuthenticationService.UserLookup userLookup;
     private final User currentUser;
     private final AuthorizationService authorization;
     private final Runnable onSignOut;
@@ -99,6 +101,7 @@ public final class CatalogController {
             AuditService audits,
             UserAdminService userAdmin,
             AuthenticationService authentication,
+            AuthenticationService.UserLookup userLookup,
             User currentUser,
             AuthorizationService authorization,
             Runnable onSignOut) {
@@ -109,6 +112,7 @@ public final class CatalogController {
         this.audits = audits;
         this.userAdmin = userAdmin;
         this.authentication = authentication;
+        this.userLookup = userLookup;
         this.currentUser = currentUser;
         this.authorization = authorization;
         this.onSignOut = onSignOut;
@@ -334,10 +338,14 @@ public final class CatalogController {
 
     @FXML
     private void showFines() {
-        UUID memberId = currentUser.id();
+        Optional<UUID> memberId = resolveMemberIdForDesk("Unpaid fines");
+        if (memberId.isEmpty()) {
+            return;
+        }
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/fines.fxml"));
-            loader.setController(new FinesController(fines, currentUser, memberId, authorization));
+            loader.setController(new FinesController(
+                    fines, currentUser, memberId.orElseThrow(), authorization));
             Parent root = loader.load();
             Stage dialog = new Stage();
             dialog.initModality(Modality.APPLICATION_MODAL);
@@ -354,13 +362,21 @@ public final class CatalogController {
 
     @FXML
     private void showMyLoans() {
+        Optional<UUID> memberId = resolveMemberIdForDesk("Member loans");
+        if (memberId.isEmpty()) {
+            return;
+        }
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/my-loans.fxml"));
-            loader.setController(new MyLoansController(circulation, currentUser, currentUser.id()));
+            loader.setController(new MyLoansController(
+                    circulation, currentUser, memberId.orElseThrow()));
             Parent root = loader.load();
             Stage dialog = new Stage();
             dialog.initModality(Modality.APPLICATION_MODAL);
-            dialog.setTitle("My loans");
+            dialog.setTitle(authorization.isAllowed(currentUser.role(), Permission.MANAGE_LOANS)
+                    && !(currentUser instanceof Member)
+                    ? "Member loans"
+                    : "My loans");
             Scene scene = new Scene(root, 640, 460);
             scene.getStylesheets().add(
                     getClass().getResource("/view/library.css").toExternalForm());
@@ -370,6 +386,24 @@ public final class CatalogController {
         } catch (IOException failure) {
             statusLabel.setText("Unable to open loans desk: " + failure.getMessage());
         }
+    }
+
+    private Optional<UUID> resolveMemberIdForDesk(String deskTitle) {
+        if (!(currentUser instanceof Member)
+                && authorization.isAllowed(currentUser.role(), Permission.MANAGE_LOANS)) {
+            TextInputDialog dialog = new TextInputDialog();
+            dialog.setTitle(deskTitle);
+            dialog.setHeaderText("Look up member by email");
+            dialog.setContentText("Email");
+            Optional<String> email = dialog.showAndWait();
+            Optional<UUID> memberId = MemberLookupSupport.resolveMemberId(
+                    currentUser, authorization, userLookup, email);
+            if (memberId.isEmpty()) {
+                statusLabel.setText(deskTitle + ": member not found or cancelled");
+            }
+            return memberId;
+        }
+        return Optional.of(currentUser.id());
     }
 
     @FXML

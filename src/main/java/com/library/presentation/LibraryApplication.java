@@ -48,6 +48,7 @@ public final class LibraryApplication extends Application {
     private LoanPolicyService loanPolicies;
     private AuthorizationService authorization;
     private AuthenticationService authentication;
+    private AuthenticationService.UserLookup userLookup;
     private AuditService audit;
 
     @Override
@@ -98,8 +99,9 @@ public final class LibraryApplication extends Application {
         recommendations = new RecommendationService(
                 new JdbcRecommendationRepository(dataSource), authorization);
         Argon2PasswordHasher passwordHasher = new Argon2PasswordHasher();
+        userLookup = new JdbcUserLookup(dataSource, policy.borrowLimit());
         authentication = new AuthenticationService(
-                new JdbcUserLookup(dataSource, policy.borrowLimit()),
+                userLookup,
                 userAccounts,
                 passwordHasher,
                 Clock.systemUTC());
@@ -137,6 +139,7 @@ public final class LibraryApplication extends Application {
                     audit,
                     userAdmin,
                     authentication,
+                    userLookup,
                     user,
                     authorization,
                     this::showLogin));
