@@ -7,6 +7,7 @@ import com.library.domain.ReturnReceipt;
 import com.library.domain.User;
 import com.library.security.AuthorizationService;
 import com.library.security.Permission;
+import com.library.service.AuditService;
 import com.library.service.CatalogService;
 import com.library.service.CirculationService;
 import com.library.service.FineService;
@@ -38,6 +39,7 @@ public final class CatalogController {
     private final CirculationService circulation;
     private final FineService fines;
     private final RecommendationService recommendations;
+    private final AuditService audits;
     private final User currentUser;
     private final AuthorizationService authorization;
     private final Runnable onSignOut;
@@ -58,6 +60,8 @@ public final class CatalogController {
     private Button myLoansButton;
     @FXML
     private Button overdueButton;
+    @FXML
+    private Button auditButton;
     @FXML
     private Button addButton;
     @FXML
@@ -84,6 +88,7 @@ public final class CatalogController {
             CirculationService circulation,
             FineService fines,
             RecommendationService recommendations,
+            AuditService audits,
             User currentUser,
             AuthorizationService authorization,
             Runnable onSignOut) {
@@ -91,6 +96,7 @@ public final class CatalogController {
         this.circulation = circulation;
         this.fines = fines;
         this.recommendations = recommendations;
+        this.audits = audits;
         this.currentUser = currentUser;
         this.authorization = authorization;
         this.onSignOut = onSignOut;
@@ -131,6 +137,9 @@ public final class CatalogController {
         boolean manageLoans = authorization.isAllowed(currentUser.role(), Permission.MANAGE_LOANS);
         overdueButton.setVisible(manageLoans);
         overdueButton.setManaged(manageLoans);
+        boolean viewAudit = authorization.isAllowed(currentUser.role(), Permission.VIEW_AUDIT_LOG);
+        auditButton.setVisible(viewAudit);
+        auditButton.setManaged(viewAudit);
         boolean catalogManager = authorization.isAllowed(
                 currentUser.role(), Permission.MANAGE_CATALOG);
         addButton.setVisible(catalogManager);
@@ -345,6 +354,25 @@ public final class CatalogController {
             dialog.showAndWait();
         } catch (IOException failure) {
             statusLabel.setText("Unable to open overdue report: " + failure.getMessage());
+        }
+    }
+
+    @FXML
+    private void showAuditLog() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/audit-log.fxml"));
+            loader.setController(new AuditLogController(audits, currentUser));
+            Parent root = loader.load();
+            Stage dialog = new Stage();
+            dialog.initModality(Modality.APPLICATION_MODAL);
+            dialog.setTitle("Audit log");
+            Scene scene = new Scene(root, 760, 520);
+            scene.getStylesheets().add(
+                    getClass().getResource("/view/library.css").toExternalForm());
+            dialog.setScene(scene);
+            dialog.showAndWait();
+        } catch (IOException failure) {
+            statusLabel.setText("Unable to open audit log: " + failure.getMessage());
         }
     }
 
