@@ -79,7 +79,7 @@ class PresentationContractTest {
         assertEquals(1, document.getElementsByTagName("TextField").getLength());
         assertEquals(1, document.getElementsByTagName("TableView").getLength());
         assertEquals(4, document.getElementsByTagName("TableColumn").getLength());
-        assertEquals(13, document.getElementsByTagName("Button").getLength());
+        assertEquals(14, document.getElementsByTagName("Button").getLength());
         assertEquals("#search",
                 document.getElementsByTagName("Button").item(0)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
@@ -116,8 +116,11 @@ class PresentationContractTest {
         assertEquals("#deleteSelected",
                 document.getElementsByTagName("Button").item(11)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#signOut",
+        assertEquals("#showChangePassword",
                 document.getElementsByTagName("Button").item(12)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
+        assertEquals("#signOut",
+                document.getElementsByTagName("Button").item(13)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
         assertNotNull(getClass().getResource("/view/library.css"));
         assertNotNull(getClass().getResource("/view/book-editor.fxml"));
@@ -125,6 +128,7 @@ class PresentationContractTest {
         assertNotNull(getClass().getResource("/view/fines.fxml"));
         assertNotNull(getClass().getResource("/view/my-loans.fxml"));
         assertNotNull(getClass().getResource("/view/user-admin.fxml"));
+        assertNotNull(getClass().getResource("/view/change-password.fxml"));
         assertNotNull(getClass().getResource("/view/overdue-loans.fxml"));
         assertNotNull(getClass().getResource("/view/audit-log.fxml"));
     }

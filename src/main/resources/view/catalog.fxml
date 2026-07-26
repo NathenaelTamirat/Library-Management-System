@@ -85,6 +85,11 @@
                         accessibleText="Delete selected book"
                         styleClass="danger-button"
                         onAction="#deleteSelected"/>
+                <Button fx:id="changePasswordButton"
+                        text="Change _password"
+                        mnemonicParsing="true"
+                        accessibleText="Change password"
+                        onAction="#showChangePassword"/>
                 <Button fx:id="signOutButton"
                         text="Sign _out"
                         mnemonicParsing="true"

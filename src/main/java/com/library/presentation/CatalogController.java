@@ -5,6 +5,7 @@ import com.library.domain.Loan;
 import com.library.domain.Member;
 import com.library.domain.ReturnReceipt;
 import com.library.domain.User;
+import com.library.security.AuthenticationService;
 import com.library.security.AuthorizationService;
 import com.library.security.Permission;
 import com.library.service.AuditService;
@@ -42,6 +43,7 @@ public final class CatalogController {
     private final RecommendationService recommendations;
     private final AuditService audits;
     private final UserAdminService userAdmin;
+    private final AuthenticationService authentication;
     private final User currentUser;
     private final AuthorizationService authorization;
     private final Runnable onSignOut;
@@ -73,6 +75,8 @@ public final class CatalogController {
     @FXML
     private Button deleteButton;
     @FXML
+    private Button changePasswordButton;
+    @FXML
     private Button signOutButton;
     @FXML
     private TableView<Book> resultsTable;
@@ -94,6 +98,7 @@ public final class CatalogController {
             RecommendationService recommendations,
             AuditService audits,
             UserAdminService userAdmin,
+            AuthenticationService authentication,
             User currentUser,
             AuthorizationService authorization,
             Runnable onSignOut) {
@@ -103,6 +108,7 @@ public final class CatalogController {
         this.recommendations = recommendations;
         this.audits = audits;
         this.userAdmin = userAdmin;
+        this.authentication = authentication;
         this.currentUser = currentUser;
         this.authorization = authorization;
         this.onSignOut = onSignOut;
@@ -305,6 +311,25 @@ public final class CatalogController {
     @FXML
     private void signOut() {
         onSignOut.run();
+    }
+
+    @FXML
+    private void showChangePassword() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/change-password.fxml"));
+            loader.setController(new ChangePasswordController(authentication, currentUser));
+            Parent root = loader.load();
+            Stage dialog = new Stage();
+            dialog.initModality(Modality.APPLICATION_MODAL);
+            dialog.setTitle("Change password");
+            Scene scene = new Scene(root, 420, 360);
+            scene.getStylesheets().add(
+                    getClass().getResource("/view/library.css").toExternalForm());
+            dialog.setScene(scene);
+            dialog.showAndWait();
+        } catch (IOException failure) {
+            statusLabel.setText("Unable to open change password: " + failure.getMessage());
+        }
     }
 
     @FXML

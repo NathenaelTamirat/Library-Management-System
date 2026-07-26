@@ -136,6 +136,7 @@ public final class LibraryApplication extends Application {
                     recommendations,
                     audit,
                     userAdmin,
+                    authentication,
                     user,
                     authorization,
                     this::showLogin));
