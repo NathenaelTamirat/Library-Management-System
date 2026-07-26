@@ -64,6 +64,11 @@
                         mnemonicParsing="true"
                         accessibleText="Open audit log"
                         onAction="#showAuditLog"/>
+                <Button fx:id="usersButton"
+                        text="_Users"
+                        mnemonicParsing="true"
+                        accessibleText="Open user administration"
+                        onAction="#showUserAdmin"/>
                 <Button fx:id="addButton"
                         text="_Add book"
                         mnemonicParsing="true"

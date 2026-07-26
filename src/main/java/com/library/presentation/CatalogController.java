@@ -12,6 +12,7 @@ import com.library.service.CatalogService;
 import com.library.service.CirculationService;
 import com.library.service.FineService;
 import com.library.service.RecommendationService;
+import com.library.service.UserAdminService;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -40,6 +41,7 @@ public final class CatalogController {
     private final FineService fines;
     private final RecommendationService recommendations;
     private final AuditService audits;
+    private final UserAdminService userAdmin;
     private final User currentUser;
     private final AuthorizationService authorization;
     private final Runnable onSignOut;
@@ -62,6 +64,8 @@ public final class CatalogController {
     private Button overdueButton;
     @FXML
     private Button auditButton;
+    @FXML
+    private Button usersButton;
     @FXML
     private Button addButton;
     @FXML
@@ -89,6 +93,7 @@ public final class CatalogController {
             FineService fines,
             RecommendationService recommendations,
             AuditService audits,
+            UserAdminService userAdmin,
             User currentUser,
             AuthorizationService authorization,
             Runnable onSignOut) {
@@ -97,6 +102,7 @@ public final class CatalogController {
         this.fines = fines;
         this.recommendations = recommendations;
         this.audits = audits;
+        this.userAdmin = userAdmin;
         this.currentUser = currentUser;
         this.authorization = authorization;
         this.onSignOut = onSignOut;
@@ -140,6 +146,9 @@ public final class CatalogController {
         boolean viewAudit = authorization.isAllowed(currentUser.role(), Permission.VIEW_AUDIT_LOG);
         auditButton.setVisible(viewAudit);
         auditButton.setManaged(viewAudit);
+        boolean manageUsers = authorization.isAllowed(currentUser.role(), Permission.MANAGE_USERS);
+        usersButton.setVisible(manageUsers);
+        usersButton.setManaged(manageUsers);
         boolean catalogManager = authorization.isAllowed(
                 currentUser.role(), Permission.MANAGE_CATALOG);
         addButton.setVisible(catalogManager);
@@ -373,6 +382,25 @@ public final class CatalogController {
             dialog.showAndWait();
         } catch (IOException failure) {
             statusLabel.setText("Unable to open audit log: " + failure.getMessage());
+        }
+    }
+
+    @FXML
+    private void showUserAdmin() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/user-admin.fxml"));
+            loader.setController(new UserAdminController(userAdmin, currentUser));
+            Parent root = loader.load();
+            Stage dialog = new Stage();
+            dialog.initModality(Modality.APPLICATION_MODAL);
+            dialog.setTitle("User administration");
+            Scene scene = new Scene(root, 820, 640);
+            scene.getStylesheets().add(
+                    getClass().getResource("/view/library.css").toExternalForm());
+            dialog.setScene(scene);
+            dialog.showAndWait();
+        } catch (IOException failure) {
+            statusLabel.setText("Unable to open user administration: " + failure.getMessage());
         }
     }
 
