@@ -12,6 +12,7 @@ import com.library.service.AuditService;
 import com.library.service.CatalogService;
 import com.library.service.CirculationService;
 import com.library.service.FineService;
+import com.library.service.LoanPolicyService;
 import com.library.service.RecommendationService;
 import com.library.service.UserAdminService;
 import java.io.IOException;
@@ -44,6 +45,7 @@ public final class CatalogController {
     private final RecommendationService recommendations;
     private final AuditService audits;
     private final UserAdminService userAdmin;
+    private final LoanPolicyService loanPolicies;
     private final AuthenticationService authentication;
     private final AuthenticationService.UserLookup userLookup;
     private final User currentUser;
@@ -72,6 +74,8 @@ public final class CatalogController {
     private Button auditButton;
     @FXML
     private Button usersButton;
+    @FXML
+    private Button policyButton;
     @FXML
     private Button addButton;
     @FXML
@@ -104,6 +108,7 @@ public final class CatalogController {
             RecommendationService recommendations,
             AuditService audits,
             UserAdminService userAdmin,
+            LoanPolicyService loanPolicies,
             AuthenticationService authentication,
             AuthenticationService.UserLookup userLookup,
             User currentUser,
@@ -115,6 +120,7 @@ public final class CatalogController {
         this.recommendations = recommendations;
         this.audits = audits;
         this.userAdmin = userAdmin;
+        this.loanPolicies = loanPolicies;
         this.authentication = authentication;
         this.userLookup = userLookup;
         this.currentUser = currentUser;
@@ -165,6 +171,8 @@ public final class CatalogController {
         boolean manageUsers = authorization.isAllowed(currentUser.role(), Permission.MANAGE_USERS);
         usersButton.setVisible(manageUsers);
         usersButton.setManaged(manageUsers);
+        policyButton.setVisible(manageUsers);
+        policyButton.setManaged(manageUsers);
         boolean catalogManager = authorization.isAllowed(
                 currentUser.role(), Permission.MANAGE_CATALOG);
         addButton.setVisible(catalogManager);
@@ -535,6 +543,25 @@ public final class CatalogController {
             dialog.showAndWait();
         } catch (IOException failure) {
             statusLabel.setText("Unable to open user administration: " + failure.getMessage());
+        }
+    }
+
+    @FXML
+    private void showPolicySettings() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/policy-settings.fxml"));
+            loader.setController(new PolicySettingsController(loanPolicies, currentUser));
+            Parent root = loader.load();
+            Stage dialog = new Stage();
+            dialog.initModality(Modality.APPLICATION_MODAL);
+            dialog.setTitle("Loan policy");
+            Scene scene = new Scene(root, 480, 420);
+            scene.getStylesheets().add(
+                    getClass().getResource("/view/library.css").toExternalForm());
+            dialog.setScene(scene);
+            dialog.showAndWait();
+        } catch (IOException failure) {
+            statusLabel.setText("Unable to open policy settings: " + failure.getMessage());
         }
     }
 

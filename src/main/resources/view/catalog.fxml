@@ -74,6 +74,11 @@
                         mnemonicParsing="true"
                         accessibleText="Open user administration"
                         onAction="#showUserAdmin"/>
+                <Button fx:id="policyButton"
+                        text="_Policy"
+                        mnemonicParsing="true"
+                        accessibleText="Open loan policy settings"
+                        onAction="#showPolicySettings"/>
                 <Button fx:id="addButton"
                         text="_Add book"
                         mnemonicParsing="true"

@@ -138,6 +138,7 @@ public final class LibraryApplication extends Application {
                     recommendations,
                     audit,
                     userAdmin,
+                    loanPolicies,
                     authentication,
                     userLookup,
                     user,
