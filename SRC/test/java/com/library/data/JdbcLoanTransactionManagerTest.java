@@ -1,0 +1,123 @@
+package com.library.data;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import org.h2.jdbcx.JdbcDataSource;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+class JdbcLoanTransactionManagerTest {
+    private JdbcDataSource dataSource;
+    private JdbcLoanTransactionManager transactions;
+    private ExecutorService executor;
+    private UUID userId;
+
+    @BeforeEach
+    void createDatabase() throws Exception {
+        dataSource = new JdbcDataSource();
+        dataSource.setURL("jdbc:h2:mem:loans;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=5000");
+        userId = UUID.randomUUID();
+        try (Connection connection = dataSource.getConnection();
+             Statement statement = connection.createStatement()) {
+            statement.execute("DROP TABLE IF EXISTS loans");
+            statement.execute("DROP TABLE IF EXISTS books");
+            statement.execute("DROP TABLE IF EXISTS users");
+            statement.execute("CREATE TABLE users (id UUID PRIMARY KEY)");
+            statement.execute("""
+                    CREATE TABLE books (
+                        isbn VARCHAR(20) PRIMARY KEY,
+                        available_copies INTEGER NOT NULL CHECK (available_copies >= 0)
+                    )
+                    """);
+            statement.execute("""
+                    CREATE TABLE loans (
+                        id UUID PRIMARY KEY,
+                        user_id UUID NOT NULL REFERENCES users(id),
+                        isbn VARCHAR(20) NOT NULL REFERENCES books(isbn),
+                        checkout_date DATE NOT NULL,
+                        due_date DATE NOT NULL,
+                        status VARCHAR(20) NOT NULL
+                    )
+                    """);
+            statement.execute("INSERT INTO users (id) VALUES ('" + userId + "')");
+            statement.execute("INSERT INTO books (isbn, available_copies) VALUES ('9780134685991', 1)");
+        }
+        transactions = new JdbcLoanTransactionManager(dataSource);
+        executor = Executors.newFixedThreadPool(2);
+    }
+
+    @AfterEach
+    void stopExecutor() {
+        executor.shutdownNow();
+    }
+
+    @Test
+    void rowLockAllowsOnlyOneConcurrentCheckoutOfLastCopy() throws Exception {
+        CountDownLatch start = new CountDownLatch(1);
+        Callable<Boolean> checkout = () -> {
+            start.await();
+            try {
+                transactions.checkout(
+                        userId,
+                        "9780134685991",
+                        LocalDate.of(2026, 7, 26),
+                        LocalDate.of(2026, 8, 9));
+                return true;
+            } catch (SQLException unavailable) {
+                return false;
+            }
+        };
+        List<Future<Boolean>> attempts = List.of(
+                executor.submit(checkout),
+                executor.submit(checkout));
+
+        start.countDown();
+
+        int successes = (attempts.get(0).get() ? 1 : 0) + (attempts.get(1).get() ? 1 : 0);
+        assertEquals(1, successes);
+        assertEquals(1, scalar("SELECT COUNT(*) FROM loans"));
+        assertEquals(0, scalar("SELECT available_copies FROM books"));
+    }
+
+    @Test
+    void failureAfterLoanInsertRollsBackTheWholeTransaction() throws Exception {
+        try (Connection connection = dataSource.getConnection();
+             Statement statement = connection.createStatement()) {
+            statement.execute("""
+                    ALTER TABLE books ADD CONSTRAINT inventory_must_remain_positive
+                    CHECK (available_copies > 0)
+                    """);
+        }
+
+        assertThrows(SQLException.class, () -> transactions.checkout(
+                userId,
+                "9780134685991",
+                LocalDate.of(2026, 7, 26),
+                LocalDate.of(2026, 8, 9)));
+
+        assertEquals(0, scalar("SELECT COUNT(*) FROM loans"));
+        assertEquals(1, scalar("SELECT available_copies FROM books"));
+    }
+
+    private int scalar(String sql) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet results = statement.executeQuery(sql)) {
+            results.next();
+            return results.getInt(1);
+        }
+    }
+}
