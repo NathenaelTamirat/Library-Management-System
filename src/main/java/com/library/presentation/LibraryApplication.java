@@ -9,6 +9,7 @@ import com.library.data.JdbcFineRepository;
 import com.library.data.JdbcHoldRepository;
 import com.library.data.JdbcLoanPolicyRepository;
 import com.library.data.JdbcLoanTransactionManager;
+import com.library.data.JdbcNotificationRepository;
 import com.library.data.JdbcRecommendationRepository;
 import com.library.data.JdbcUserAdminRepository;
 import com.library.data.JdbcUserLookup;
@@ -26,6 +27,7 @@ import com.library.service.ExportService;
 import com.library.service.FineService;
 import com.library.service.HoldService;
 import com.library.service.LoanPolicyService;
+import com.library.service.NotificationService;
 import com.library.service.RecommendationService;
 import com.library.service.UserAdminService;
 import com.zaxxer.hikari.HikariDataSource;
@@ -75,10 +77,15 @@ public final class LibraryApplication extends Application {
                 authorization,
                 audit);
         JdbcFineRepository fineRepository = new JdbcFineRepository(dataSource);
+        NotificationService notifications = new NotificationService(
+                new JdbcNotificationRepository(dataSource),
+                authorization,
+                Clock.systemUTC());
         HoldService holdService = new HoldService(
                 new JdbcHoldRepository(dataSource),
                 authorization,
                 audit,
+                notifications,
                 Clock.systemUTC());
         JdbcLoanPolicyRepository policyRepository = new JdbcLoanPolicyRepository(dataSource, true);
         loanPolicies = new LoanPolicyService(policyRepository, authorization, audit);

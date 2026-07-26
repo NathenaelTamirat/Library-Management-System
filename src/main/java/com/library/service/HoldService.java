@@ -4,6 +4,7 @@ import com.library.data.HoldRepository;
 import com.library.domain.Hold;
 import com.library.domain.HoldStatus;
 import com.library.domain.Member;
+import com.library.domain.NotificationKind;
 import com.library.domain.User;
 import com.library.security.AuthorizationService;
 import com.library.security.Permission;
@@ -20,6 +21,7 @@ public final class HoldService {
     private final HoldRepository holds;
     private final AuthorizationService authorization;
     private final AuditService audit;
+    private final NotificationService notifications;
     private final Clock clock;
 
     public HoldService(
@@ -27,9 +29,19 @@ public final class HoldService {
             AuthorizationService authorization,
             AuditService audit,
             Clock clock) {
+        this(holds, authorization, audit, null, clock);
+    }
+
+    public HoldService(
+            HoldRepository holds,
+            AuthorizationService authorization,
+            AuditService audit,
+            NotificationService notifications,
+            Clock clock) {
         this.holds = holds;
         this.authorization = authorization;
         this.audit = audit;
+        this.notifications = notifications;
         this.clock = clock;
     }
 
@@ -100,6 +112,12 @@ public final class HoldService {
                 ready.userId(),
                 "HOLD_READY",
                 "{\"holdId\":\"" + ready.id() + "\",\"isbn\":\"" + isbn + "\"}");
+        if (notifications != null) {
+            notifications.enqueue(
+                    ready.userId(),
+                    NotificationKind.HOLD_READY,
+                    "{\"holdId\":\"" + ready.id() + "\",\"isbn\":\"" + isbn + "\"}");
+        }
         return Optional.of(ready);
     }
 

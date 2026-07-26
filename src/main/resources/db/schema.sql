@@ -96,6 +96,19 @@ CREATE TABLE IF NOT EXISTS fine_events (
 
 CREATE INDEX IF NOT EXISTS fine_events_fine_id_idx ON fine_events (fine_id, occurred_at);
 
+CREATE TABLE IF NOT EXISTS notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    kind VARCHAR(30) NOT NULL,
+    payload TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    sent_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS notifications_pending_idx
+    ON notifications (created_at)
+    WHERE sent_at IS NULL;
+
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'hold_status') THEN
