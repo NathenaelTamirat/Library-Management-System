@@ -170,6 +170,34 @@ class CirculationServiceTest {
     }
 
     @Test
+    void renewRejectsWhenLimitOrUnpaidFinesOrOverdue() throws Exception {
+        RecordingTransactions transactions = new RecordingTransactions();
+        RecordingAuditRepository audits = new RecordingAuditRepository();
+        RecordingFines fines = new RecordingFines();
+        Clock clock = Clock.fixed(Instant.parse("2026-07-26T00:00:00Z"), ZoneOffset.UTC);
+        CirculationService circulation = new CirculationService(
+                transactions,
+                fines,
+                null,
+                new AuthorizationService(),
+                new AuditService(audits),
+                clock,
+                14,
+                1);
+        Member member = new Member(UUID.randomUUID(), "Ada", "ada@example.edu", "hash", 2);
+        Loan loan = circulation.checkout(member, "9780134685991");
+        circulation.renew(member, loan.id());
+
+        assertThrows(IllegalStateException.class, () -> circulation.renew(member, loan.id()));
+
+        Member other = new Member(UUID.randomUUID(), "Grace", "grace@example.edu", "hash", 2);
+        Loan second = circulation.checkout(other, "9780321356680");
+        fines.unpaid.put(other.id(), List.of(new Fine(
+                UUID.randomUUID(), second.id(), new BigDecimal("1.00"), false, LocalDate.of(2026, 7, 1))));
+        assertThrows(IllegalStateException.class, () -> circulation.renew(other, second.id()));
+    }
+
+    @Test
     void memberCanRenewOwnLoan() throws Exception {
         RecordingTransactions transactions = new RecordingTransactions();
         RecordingAuditRepository audits = new RecordingAuditRepository();

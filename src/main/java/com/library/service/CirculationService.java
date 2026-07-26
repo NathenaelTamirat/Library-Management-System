@@ -4,6 +4,7 @@ import com.library.data.FineRepository;
 import com.library.data.LoanTransactionManager;
 import com.library.domain.Hold;
 import com.library.domain.Loan;
+import com.library.domain.LoanStatus;
 import com.library.domain.Member;
 import com.library.domain.ReturnReceipt;
 import com.library.domain.User;
@@ -27,6 +28,7 @@ public final class CirculationService {
     private final AuditService audit;
     private final Clock clock;
     private final int loanDays;
+    private final int maxRenewals;
 
     public CirculationService(
             LoanTransactionManager transactions,
@@ -35,7 +37,7 @@ public final class CirculationService {
             AuditService audit,
             Clock clock,
             int loanDays) {
-        this(transactions, fines, null, authorization, audit, clock, loanDays);
+        this(transactions, fines, null, authorization, audit, clock, loanDays, 2);
     }
 
     public CirculationService(
@@ -46,8 +48,23 @@ public final class CirculationService {
             AuditService audit,
             Clock clock,
             int loanDays) {
+        this(transactions, fines, holds, authorization, audit, clock, loanDays, 2);
+    }
+
+    public CirculationService(
+            LoanTransactionManager transactions,
+            FineRepository fines,
+            HoldService holds,
+            AuthorizationService authorization,
+            AuditService audit,
+            Clock clock,
+            int loanDays,
+            int maxRenewals) {
         if (loanDays < 1) {
             throw new IllegalArgumentException("Loan period must be positive");
+        }
+        if (maxRenewals < 0) {
+            throw new IllegalArgumentException("Max renewals cannot be negative");
         }
         this.transactions = transactions;
         this.fines = fines;
@@ -56,6 +73,7 @@ public final class CirculationService {
         this.audit = audit;
         this.clock = clock;
         this.loanDays = loanDays;
+        this.maxRenewals = maxRenewals;
     }
 
     public Loan checkout(Member member, String isbn) throws SQLException {
@@ -124,6 +142,15 @@ public final class CirculationService {
         Loan existing = transactions.findById(loanId)
                 .orElseThrow(() -> new IllegalStateException("Loan not found: " + loanId));
         authorizeLoanOwnerOrStaff(actor, existing);
+        if (existing.status() == LoanStatus.OVERDUE) {
+            throw new IllegalStateException("Cannot renew an overdue loan");
+        }
+        if (existing.renewalCount() >= maxRenewals) {
+            throw new IllegalStateException("Renewal limit reached: " + maxRenewals);
+        }
+        if (!fines.findUnpaidByUser(existing.userId()).isEmpty()) {
+            throw new IllegalStateException("Cannot renew while member has unpaid fines");
+        }
         LocalDate today = LocalDate.now(clock);
         LocalDate base = existing.dueDate().isAfter(today) ? existing.dueDate() : today;
         Loan renewed = transactions.renew(loanId, base.plusDays(loanDays));
