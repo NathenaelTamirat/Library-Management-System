@@ -16,7 +16,7 @@ class SecurityServicesTest {
 
         assertTrue(hash.startsWith("$argon2id$"));
         assertTrue(hasher.verify(hash, "correct horse battery staple".toCharArray()));
-        assertFalse(hasher.verify(hash, "incorrect password".toCharArray()));
+        assertFalse(hasher.verify(hash, "bad".toCharArray()));
     }
 
     @Test
@@ -31,7 +31,7 @@ class SecurityServicesTest {
         assertEquals(member, service.authenticate(
                 "ADA@example.edu", "university-library-2026".toCharArray()).orElseThrow());
         assertTrue(service.authenticate(
-                "ada@example.edu", "wrong-password".toCharArray()).isEmpty());
+                "ada@example.edu", "bad".toCharArray()).isEmpty());
     }
 
     @Test

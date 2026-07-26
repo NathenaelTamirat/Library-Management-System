@@ -34,7 +34,9 @@ public final class Argon2PasswordHasher implements PasswordHasher {
         if (encodedHash == null || encodedHash.isBlank()) {
             throw new IllegalArgumentException("Encoded hash is required");
         }
-        requirePassword(password);
+        if (password == null) {
+            throw new IllegalArgumentException("Password is required");
+        }
         try {
             return argon2.verify(encodedHash, password);
         } finally {
