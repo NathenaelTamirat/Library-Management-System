@@ -18,6 +18,8 @@
                 accessibleText="Refresh overdue loans" onAction="#refresh"/>
         <Button fx:id="reconcileButton" text="Reconcile statuses" accessibleText="Reconcile overdue statuses"
                 onAction="#reconcile"/>
+        <Button fx:id="markLostButton" text="Mark _lost" mnemonicParsing="true"
+                accessibleText="Mark selected loan lost" onAction="#markLostSelected"/>
         <Button text="_Close" mnemonicParsing="true" accessibleText="Close overdue report"
                 cancelButton="true" onAction="#close"/>
     </HBox>

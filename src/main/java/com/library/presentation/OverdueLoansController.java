@@ -7,7 +7,9 @@ import java.util.List;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
@@ -23,6 +25,8 @@ public final class OverdueLoansController {
     private Button refreshButton;
     @FXML
     private Button reconcileButton;
+    @FXML
+    private Button markLostButton;
     @FXML
     private Label statusLabel;
 
@@ -81,6 +85,37 @@ public final class OverdueLoansController {
         task.setOnFailed(ignored ->
                 statusLabel.setText("Reconcile failed: " + task.getException().getMessage()));
         start(task, "overdue-reconcile");
+    }
+
+    @FXML
+    private void markLostSelected() {
+        Loan selected = loansList.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            statusLabel.setText("Select an overdue loan");
+            return;
+        }
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Mark loan lost");
+        confirm.setHeaderText("Mark this loan as lost and charge a replacement fine?");
+        confirm.setContentText(selected.isbn() + " — member " + selected.userId());
+        if (confirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
+            statusLabel.setText("Mark lost cancelled");
+            return;
+        }
+        Task<Loan> task = new Task<>() {
+            @Override
+            protected Loan call() throws Exception {
+                return circulation.markLost(actor, selected.id());
+            }
+        };
+        markLostButton.disableProperty().bind(task.runningProperty());
+        task.setOnSucceeded(ignored -> {
+            statusLabel.setText("Marked lost: " + task.getValue().id());
+            refresh();
+        });
+        task.setOnFailed(ignored ->
+                statusLabel.setText("Mark lost failed: " + task.getException().getMessage()));
+        start(task, "overdue-mark-lost");
     }
 
     @FXML

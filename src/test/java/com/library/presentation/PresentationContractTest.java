@@ -149,12 +149,15 @@ class PresentationContractTest {
     @Test
     void overdueLoansFxmlWiresRefreshAndReconcileActions() throws Exception {
         Document document = parse("/view/overdue-loans.fxml");
-        assertEquals(3, document.getElementsByTagName("Button").getLength());
+        assertEquals(4, document.getElementsByTagName("Button").getLength());
         assertEquals("#refresh",
                 document.getElementsByTagName("Button").item(0)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
         assertEquals("#reconcile",
                 document.getElementsByTagName("Button").item(1)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
+        assertEquals("#markLostSelected",
+                document.getElementsByTagName("Button").item(2)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
     }
 
