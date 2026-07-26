@@ -1,0 +1,15 @@
+package com.library.data;
+
+import com.library.domain.Fine;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface FineRepository {
+    Optional<Fine> findByLoanId(UUID loanId) throws SQLException;
+
+    List<Fine> findUnpaidByUser(UUID userId) throws SQLException;
+
+    void markPaid(UUID fineId) throws SQLException;
+}
