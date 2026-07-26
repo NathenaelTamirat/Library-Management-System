@@ -7,15 +7,22 @@ import com.library.security.AuthorizationService;
 import com.library.security.Permission;
 import com.library.service.CatalogService;
 import com.library.service.CirculationService;
+import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 
 public final class CatalogController {
     private final CatalogService catalog;
@@ -31,6 +38,10 @@ public final class CatalogController {
     private Button borrowButton;
     @FXML
     private Button returnButton;
+    @FXML
+    private Button addButton;
+    @FXML
+    private Button editButton;
     @FXML
     private Button deleteButton;
     @FXML
@@ -73,6 +84,10 @@ public final class CatalogController {
         returnButton.setManaged(canReturn);
         boolean catalogManager = authorization.isAllowed(
                 currentUser.role(), Permission.MANAGE_CATALOG);
+        addButton.setVisible(catalogManager);
+        addButton.setManaged(catalogManager);
+        editButton.setVisible(catalogManager);
+        editButton.setManaged(catalogManager);
         deleteButton.setVisible(catalogManager);
         deleteButton.setManaged(catalogManager);
     }
@@ -110,6 +125,21 @@ public final class CatalogController {
     }
 
     @FXML
+    private void addBook() {
+        openEditor(Optional.empty());
+    }
+
+    @FXML
+    private void editSelected() {
+        Book selected = resultsList.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            statusLabel.setText("Select a book to edit");
+            return;
+        }
+        openEditor(Optional.of(selected));
+    }
+
+    @FXML
     private void returnSelected() {
         Book selected = resultsList.getSelectionModel().getSelectedItem();
         if (selected == null) {
@@ -129,6 +159,26 @@ public final class CatalogController {
         }
         runMutation(deleteButton, "Deleting…", () ->
                 catalog.delete(currentUser, selected.isbn()));
+    }
+
+    private void openEditor(Optional<Book> existing) {
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/view/book-editor.fxml"));
+            loader.setController(new BookEditorController(
+                    catalog, currentUser, existing, ignored -> search()));
+            Parent root = loader.load();
+            Stage dialog = new Stage();
+            dialog.initModality(Modality.APPLICATION_MODAL);
+            dialog.setTitle(existing.isPresent() ? "Edit book" : "Add book");
+            Scene scene = new Scene(root, 480, 360);
+            scene.getStylesheets().add(
+                    getClass().getResource("/view/library.css").toExternalForm());
+            dialog.setScene(scene);
+            dialog.showAndWait();
+        } catch (IOException failure) {
+            statusLabel.setText("Unable to open editor: " + failure.getMessage());
+        }
     }
 
     private void runMutation(Button source, String message, CheckedOperation operation) {

@@ -30,6 +30,12 @@
                 <Button fx:id="returnButton"
                         text="Return selected"
                         onAction="#returnSelected"/>
+                <Button fx:id="addButton"
+                        text="Add book"
+                        onAction="#addBook"/>
+                <Button fx:id="editButton"
+                        text="Edit selected"
+                        onAction="#editSelected"/>
                 <Button fx:id="deleteButton"
                         text="Delete selected"
                         styleClass="danger-button"

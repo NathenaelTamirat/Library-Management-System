@@ -27,6 +27,24 @@ public final class CatalogService {
         return books.findByIsbn(isbn);
     }
 
+    public Book add(User actor, Book book) throws SQLException {
+        authorization.require(actor.role(), Permission.MANAGE_CATALOG);
+        if (books.findByIsbn(book.isbn()).isPresent()) {
+            throw new IllegalStateException("Book already exists: " + book.isbn());
+        }
+        books.save(book);
+        return book;
+    }
+
+    public Book update(User actor, Book book) throws SQLException {
+        authorization.require(actor.role(), Permission.MANAGE_CATALOG);
+        if (books.findByIsbn(book.isbn()).isEmpty()) {
+            throw new IllegalStateException("Book does not exist: " + book.isbn());
+        }
+        books.update(book);
+        return book;
+    }
+
     public void delete(User actor, String isbn) throws SQLException {
         authorization.require(actor.role(), Permission.MANAGE_CATALOG);
         books.delete(isbn);

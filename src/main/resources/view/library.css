@@ -66,3 +66,13 @@
 .error {
     -fx-text-fill: #a32828;
 }
+
+.editor-panel {
+    -fx-background-color: white;
+}
+
+.editor-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #17324d;
+}
