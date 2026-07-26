@@ -78,7 +78,17 @@ public final class CirculationService {
 
     public Loan checkout(Member member, String isbn) throws SQLException {
         authorization.require(member, Permission.BORROW_BOOK);
-        if (!member.canBorrow()) {
+        return completeCheckout(member, isbn, member.id(), "CHECKOUT");
+    }
+
+    public Loan checkoutFor(User actor, Member member, String isbn) throws SQLException {
+        authorization.require(actor, Permission.MANAGE_LOANS);
+        return completeCheckout(member, isbn, actor.id(), "STAFF_CHECKOUT");
+    }
+
+    private Loan completeCheckout(Member member, String isbn, UUID auditorId, String action)
+            throws SQLException {
+        if (transactions.findOpenLoansByUser(member.id()).size() >= member.borrowingLimit()) {
             throw new IllegalStateException("Member has reached the borrowing limit");
         }
         if (!fines.findUnpaidByUser(member.id()).isEmpty()) {
@@ -97,9 +107,10 @@ public final class CirculationService {
             holds.fulfillIfOwned(member.id(), isbn);
         }
         audit.record(
-                member.id(),
-                "CHECKOUT",
-                "{\"loanId\":\"" + loan.id() + "\",\"isbn\":\"" + isbn + "\"}");
+                auditorId,
+                action,
+                "{\"loanId\":\"" + loan.id() + "\",\"isbn\":\"" + isbn
+                        + "\",\"memberId\":\"" + member.id() + "\"}");
         return loan;
     }
 

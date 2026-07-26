@@ -117,6 +117,25 @@ class CirculationServiceTest {
     }
 
     @Test
+    void staffCanCheckoutForMemberWithStaffAudit() throws Exception {
+        RecordingTransactions transactions = new RecordingTransactions();
+        RecordingAuditRepository audits = new RecordingAuditRepository();
+        Clock clock = Clock.fixed(Instant.parse("2026-07-26T00:00:00Z"), ZoneOffset.UTC);
+        CirculationService circulation = service(transactions, audits, clock, new RecordingFines(), 14);
+        Member member = new Member(UUID.randomUUID(), "Ada", "ada@example.edu", "hash", 2);
+        Librarian librarian = new Librarian(
+                UUID.randomUUID(), "Libby", "lib@example.edu", "hash", "desk", false);
+
+        Loan loan = circulation.checkoutFor(librarian, member, "9780134685991");
+
+        assertEquals(loan, member.activeLoans().get(0));
+        assertEquals(List.of("STAFF_CHECKOUT"), audits.actions);
+        assertThrows(
+                SecurityException.class,
+                () -> circulation.checkoutFor(member, member, "9780321356680"));
+    }
+
+    @Test
     void memberCanReturnOwnLoanAndFreesBorrowingCapacity() throws Exception {
         RecordingTransactions transactions = new RecordingTransactions();
         RecordingAuditRepository audits = new RecordingAuditRepository();
