@@ -62,6 +62,14 @@ class JdbcBookRepositoryTest {
     }
 
     @Test
+    void h2KeepsSafeLikeFallbackWhenFullTextIsDisabled() throws Exception {
+        Book book = new Book("9780134685991", "Effective Java", "Joshua Bloch", 1, 1);
+        repository.save(book);
+
+        assertEquals(List.of(book), new JdbcBookRepository(dataSource, false).search("ffective"));
+    }
+
+    @Test
     void databaseConfigurationRequiresPostgresqlAndPositivePoolSize() {
         assertThrows(IllegalArgumentException.class,
                 () -> new DataSourceFactory.DatabaseConfig("jdbc:h2:mem:test", "sa", "", 10));
