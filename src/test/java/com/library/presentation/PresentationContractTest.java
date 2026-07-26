@@ -77,7 +77,7 @@ class PresentationContractTest {
 
         assertEquals("BorderPane", document.getDocumentElement().getNodeName());
         assertEquals(1, document.getElementsByTagName("TextField").getLength());
-        assertEquals(8, document.getElementsByTagName("Button").getLength());
+        assertEquals(9, document.getElementsByTagName("Button").getLength());
         assertEquals("#search",
                 document.getElementsByTagName("Button").item(0)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
@@ -101,6 +101,9 @@ class PresentationContractTest {
                         .getAttributes().getNamedItem("onAction").getNodeValue());
         assertEquals("#deleteSelected",
                 document.getElementsByTagName("Button").item(7)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
+        assertEquals("#signOut",
+                document.getElementsByTagName("Button").item(8)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
         assertNotNull(getClass().getResource("/view/library.css"));
         assertNotNull(getClass().getResource("/view/book-editor.fxml"));

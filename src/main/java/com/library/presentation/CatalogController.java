@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -36,6 +37,7 @@ public final class CatalogController {
     private final RecommendationService recommendations;
     private final User currentUser;
     private final AuthorizationService authorization;
+    private final Runnable onSignOut;
 
     @FXML
     private TextField searchField;
@@ -56,6 +58,8 @@ public final class CatalogController {
     @FXML
     private Button deleteButton;
     @FXML
+    private Button signOutButton;
+    @FXML
     private ListView<Book> resultsList;
     @FXML
     private Label statusLabel;
@@ -66,13 +70,15 @@ public final class CatalogController {
             FineService fines,
             RecommendationService recommendations,
             User currentUser,
-            AuthorizationService authorization) {
+            AuthorizationService authorization,
+            Runnable onSignOut) {
         this.catalog = catalog;
         this.circulation = circulation;
         this.fines = fines;
         this.recommendations = recommendations;
         this.currentUser = currentUser;
         this.authorization = authorization;
+        this.onSignOut = onSignOut;
     }
 
     @FXML
@@ -224,6 +230,11 @@ public final class CatalogController {
                 + "\nFine: " + fineText);
         alert.showAndWait();
         statusLabel.setText("Returned loan " + receipt.loan().id() + " (fine " + fineText + ")");
+    }
+
+    @FXML
+    private void signOut() {
+        onSignOut.run();
     }
 
     @FXML

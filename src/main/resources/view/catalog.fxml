@@ -46,6 +46,9 @@
                         text="Delete selected"
                         styleClass="danger-button"
                         onAction="#deleteSelected"/>
+                <Button fx:id="signOutButton"
+                        text="Sign out"
+                        onAction="#signOut"/>
             </HBox>
         </VBox>
     </top>

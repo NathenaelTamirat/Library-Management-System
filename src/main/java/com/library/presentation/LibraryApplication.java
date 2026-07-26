@@ -36,6 +36,7 @@ public final class LibraryApplication extends Application {
     private RecommendationService recommendations;
     private UserAdminService userAdmin;
     private AuthorizationService authorization;
+    private AuthenticationService authentication;
 
     @Override
     public void start(Stage stage) throws IOException {
@@ -68,7 +69,7 @@ public final class LibraryApplication extends Application {
                 new JdbcRecommendationRepository(dataSource), authorization);
         Argon2PasswordHasher passwordHasher = new Argon2PasswordHasher();
         JdbcUserAdminRepository userAccounts = new JdbcUserAdminRepository(dataSource);
-        AuthenticationService authentication = new AuthenticationService(
+        authentication = new AuthenticationService(
                 new JdbcUserLookup(dataSource, 5),
                 userAccounts,
                 passwordHasher,
@@ -79,11 +80,20 @@ public final class LibraryApplication extends Application {
                 authorization,
                 audit);
 
-        FXMLLoader loader = new FXMLLoader(LibraryApplication.class.getResource("/view/login.fxml"));
-        loader.setController(new LoginController(authentication, this::showCatalog));
-        show(loader.load(), 560, 560);
-        stage.setTitle("University Library — Sign in");
+        showLogin();
         stage.show();
+    }
+
+    private void showLogin() {
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    LibraryApplication.class.getResource("/view/login.fxml"));
+            loader.setController(new LoginController(authentication, this::showCatalog));
+            show(loader.load(), 560, 560);
+            stage.setTitle("University Library — Sign in");
+        } catch (IOException failure) {
+            throw new IllegalStateException("Unable to load login", failure);
+        }
     }
 
     private void showCatalog(User user) {
@@ -91,7 +101,13 @@ public final class LibraryApplication extends Application {
             FXMLLoader loader = new FXMLLoader(
                     LibraryApplication.class.getResource("/view/catalog.fxml"));
             loader.setController(new CatalogController(
-                    catalog, circulation, fines, recommendations, user, authorization));
+                    catalog,
+                    circulation,
+                    fines,
+                    recommendations,
+                    user,
+                    authorization,
+                    this::showLogin));
             show(loader.load(), 900, 600);
             stage.setTitle("University Library — " + user.name() + " (" + user.role() + ")");
         } catch (IOException failure) {
