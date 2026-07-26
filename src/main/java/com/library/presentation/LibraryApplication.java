@@ -15,6 +15,7 @@ import com.library.domain.User;
 import com.library.security.Argon2PasswordHasher;
 import com.library.security.AuthenticationService;
 import com.library.security.AuthorizationService;
+import com.library.security.SessionGuard;
 import com.library.service.AuditService;
 import com.library.service.CatalogService;
 import com.library.service.CirculationService;
@@ -55,7 +56,8 @@ public final class LibraryApplication extends Application {
                 requiredEnvironment("LIBRARY_DB_PASSWORD"),
                 Integer.parseInt(System.getenv().getOrDefault("LIBRARY_DB_POOL_SIZE", "10")));
         dataSource = DataSourceFactory.create(config);
-        authorization = new AuthorizationService();
+        JdbcUserAdminRepository userAccounts = new JdbcUserAdminRepository(dataSource);
+        authorization = new AuthorizationService(new SessionGuard(userAccounts));
         audit = new AuditService(
                 new JdbcAuditRepository(dataSource, true), authorization);
         JdbcLoanTransactionManager loanTransactions = new JdbcLoanTransactionManager(dataSource);
@@ -91,7 +93,6 @@ public final class LibraryApplication extends Application {
         recommendations = new RecommendationService(
                 new JdbcRecommendationRepository(dataSource), authorization);
         Argon2PasswordHasher passwordHasher = new Argon2PasswordHasher();
-        JdbcUserAdminRepository userAccounts = new JdbcUserAdminRepository(dataSource);
         authentication = new AuthenticationService(
                 new JdbcUserLookup(dataSource, policy.borrowLimit()),
                 userAccounts,

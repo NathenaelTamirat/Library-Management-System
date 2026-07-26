@@ -50,6 +50,6 @@ public final class AuditService {
         if (authorization == null) {
             throw new IllegalStateException("Audit queries require an AuthorizationService");
         }
-        authorization.require(actor.role(), Permission.VIEW_AUDIT_LOG);
+        authorization.require(actor, Permission.VIEW_AUDIT_LOG);
     }
 }

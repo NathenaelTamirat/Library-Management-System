@@ -30,7 +30,7 @@ public final class UserAdminService {
 
     public UUID create(
             User actor, String name, String email, char[] password, Role role) throws SQLException {
-        authorization.require(actor.role(), Permission.MANAGE_USERS);
+        authorization.require(actor, Permission.MANAGE_USERS);
         String normalizedEmail = email == null ? "" : email.strip().toLowerCase();
         if (normalizedEmail.isBlank()) {
             throw new IllegalArgumentException("Email is required");
@@ -48,7 +48,7 @@ public final class UserAdminService {
     }
 
     public void deactivate(User actor, UUID userId) throws SQLException {
-        authorization.require(actor.role(), Permission.MANAGE_USERS);
+        authorization.require(actor, Permission.MANAGE_USERS);
         if (actor.id().equals(userId)) {
             throw new IllegalStateException("Administrators cannot deactivate themselves");
         }
@@ -57,13 +57,13 @@ public final class UserAdminService {
     }
 
     public void activate(User actor, UUID userId) throws SQLException {
-        authorization.require(actor.role(), Permission.MANAGE_USERS);
+        authorization.require(actor, Permission.MANAGE_USERS);
         users.setActive(userId, true);
         audit.record(actor.id(), "ACTIVATE_USER", "{\"userId\":\"" + userId + "\"}");
     }
 
     public void changeRole(User actor, UUID userId, Role role) throws SQLException {
-        authorization.require(actor.role(), Permission.MANAGE_USERS);
+        authorization.require(actor, Permission.MANAGE_USERS);
         if (actor.id().equals(userId) && role != Role.ADMIN) {
             throw new IllegalStateException("Administrators cannot remove their own admin role");
         }
@@ -75,13 +75,13 @@ public final class UserAdminService {
     }
 
     public List<UserRecord> list(User actor) throws SQLException {
-        authorization.require(actor.role(), Permission.MANAGE_USERS);
+        authorization.require(actor, Permission.MANAGE_USERS);
         return users.listUsers();
     }
 
     public void resetPassword(User actor, UUID userId, char[] temporaryPassword)
             throws SQLException {
-        authorization.require(actor.role(), Permission.MANAGE_USERS);
+        authorization.require(actor, Permission.MANAGE_USERS);
         if (users.findRecordById(userId).isEmpty()) {
             throw new IllegalStateException("User not found: " + userId);
         }

@@ -82,6 +82,11 @@ public final class AuthenticationService {
         }
         UserRecord record = accounts.findRecordById(actor.id())
                 .orElseThrow(() -> new IllegalStateException("User not found: " + actor.id()));
+        if (!record.active()) {
+            wipe(currentPassword);
+            wipe(newPassword);
+            throw new SecurityException("Account is deactivated");
+        }
         char[] currentCopy = currentPassword == null
                 ? null
                 : Arrays.copyOf(currentPassword, currentPassword.length);

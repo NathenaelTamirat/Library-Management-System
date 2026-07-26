@@ -26,7 +26,7 @@ public final class LoanPolicyService {
     }
 
     public LoanPolicy update(User actor, LoanPolicy policy) throws SQLException {
-        authorization.require(actor.role(), Permission.MANAGE_USERS);
+        authorization.require(actor, Permission.MANAGE_USERS);
         policies.save(policy);
         audit.record(
                 actor.id(),

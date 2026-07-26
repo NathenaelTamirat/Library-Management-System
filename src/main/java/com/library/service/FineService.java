@@ -26,7 +26,7 @@ public final class FineService {
 
     public List<Fine> unpaidFinesFor(User actor, UUID memberId) throws SQLException {
         if (!actor.id().equals(memberId)) {
-            authorization.require(actor.role(), Permission.MANAGE_LOANS);
+            authorization.require(actor, Permission.MANAGE_LOANS);
         }
         return fines.findUnpaidByUser(memberId);
     }
@@ -38,13 +38,13 @@ public final class FineService {
     }
 
     public void pay(User actor, UUID fineId) throws SQLException {
-        authorization.require(actor.role(), Permission.MANAGE_LOANS);
+        authorization.require(actor, Permission.MANAGE_LOANS);
         fines.markPaid(fineId);
         audit.record(actor.id(), "PAY_FINE", "{\"fineId\":\"" + fineId + "\"}");
     }
 
     public void waive(User actor, UUID fineId) throws SQLException {
-        authorization.require(actor.role(), Permission.MANAGE_LOANS);
+        authorization.require(actor, Permission.MANAGE_LOANS);
         fines.waive(fineId);
         audit.record(actor.id(), "WAIVE_FINE", "{\"fineId\":\"" + fineId + "\"}");
     }

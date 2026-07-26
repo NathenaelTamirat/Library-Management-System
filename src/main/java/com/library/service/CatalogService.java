@@ -37,7 +37,7 @@ public final class CatalogService {
     }
 
     public Book add(User actor, Book book) throws SQLException {
-        authorization.require(actor.role(), Permission.MANAGE_CATALOG);
+        authorization.require(actor, Permission.MANAGE_CATALOG);
         if (books.findByIsbn(book.isbn()).isPresent()) {
             throw new IllegalStateException("Book already exists: " + book.isbn());
         }
@@ -47,7 +47,7 @@ public final class CatalogService {
     }
 
     public Book update(User actor, Book book) throws SQLException {
-        authorization.require(actor.role(), Permission.MANAGE_CATALOG);
+        authorization.require(actor, Permission.MANAGE_CATALOG);
         if (books.findByIsbn(book.isbn()).isEmpty()) {
             throw new IllegalStateException("Book does not exist: " + book.isbn());
         }
@@ -67,7 +67,7 @@ public final class CatalogService {
     }
 
     public void delete(User actor, String isbn) throws SQLException {
-        authorization.require(actor.role(), Permission.MANAGE_CATALOG);
+        authorization.require(actor, Permission.MANAGE_CATALOG);
         int open = loans.countOpenLoansByIsbn(isbn);
         if (open > 0) {
             throw new IllegalStateException(

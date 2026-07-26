@@ -30,7 +30,7 @@ public final class HoldService {
     }
 
     public Hold place(Member member, String isbn) throws SQLException {
-        authorization.require(member.role(), Permission.BORROW_BOOK);
+        authorization.require(member, Permission.BORROW_BOOK);
         if (!holds.bookExists(isbn)) {
             throw new IllegalStateException("Book does not exist: " + isbn);
         }
@@ -49,22 +49,22 @@ public final class HoldService {
         Hold hold = holds.findById(holdId)
                 .orElseThrow(() -> new IllegalStateException("Hold not found: " + holdId));
         if (!actor.id().equals(hold.userId())) {
-            authorization.require(actor.role(), Permission.MANAGE_LOANS);
+            authorization.require(actor, Permission.MANAGE_LOANS);
         } else {
-            authorization.require(actor.role(), Permission.BORROW_BOOK);
+            authorization.require(actor, Permission.BORROW_BOOK);
         }
         holds.cancel(holdId);
         audit.record(actor.id(), "CANCEL_HOLD", "{\"holdId\":\"" + holdId + "\"}");
     }
 
     public List<Hold> queueForIsbn(User actor, String isbn) throws SQLException {
-        authorization.require(actor.role(), Permission.MANAGE_LOANS);
+        authorization.require(actor, Permission.MANAGE_LOANS);
         return holds.findActiveByIsbn(isbn);
     }
 
     public List<Hold> holdsFor(User actor, UUID memberId) throws SQLException {
         if (!actor.id().equals(memberId)) {
-            authorization.require(actor.role(), Permission.MANAGE_LOANS);
+            authorization.require(actor, Permission.MANAGE_LOANS);
         }
         return holds.findActiveByUser(memberId);
     }

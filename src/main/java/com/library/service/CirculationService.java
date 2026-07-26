@@ -77,7 +77,7 @@ public final class CirculationService {
     }
 
     public Loan checkout(Member member, String isbn) throws SQLException {
-        authorization.require(member.role(), Permission.BORROW_BOOK);
+        authorization.require(member, Permission.BORROW_BOOK);
         if (!member.canBorrow()) {
             throw new IllegalStateException("Member has reached the borrowing limit");
         }
@@ -162,14 +162,14 @@ public final class CirculationService {
     }
 
     public int reconcileOverdue(User actor) throws SQLException {
-        authorization.require(actor.role(), Permission.MANAGE_LOANS);
+        authorization.require(actor, Permission.MANAGE_LOANS);
         int updated = transactions.markOverdueBefore(LocalDate.now(clock));
         audit.record(actor.id(), "RECONCILE_OVERDUE", "{\"updated\":" + updated + "}");
         return updated;
     }
 
     public Loan markLost(User actor, UUID loanId) throws SQLException {
-        authorization.require(actor.role(), Permission.MANAGE_LOANS);
+        authorization.require(actor, Permission.MANAGE_LOANS);
         Loan lost = transactions.markLost(loanId, REPLACEMENT_FINE, LocalDate.now(clock));
         if (actor instanceof Member member) {
             member.removeActiveLoan(loanId);
@@ -184,13 +184,13 @@ public final class CirculationService {
 
     public List<Loan> openLoansFor(User actor, UUID memberId) throws SQLException {
         if (!actor.id().equals(memberId)) {
-            authorization.require(actor.role(), Permission.MANAGE_LOANS);
+            authorization.require(actor, Permission.MANAGE_LOANS);
         }
         return transactions.findOpenLoansByUser(memberId);
     }
 
     public List<Loan> overdueLoans(User actor) throws SQLException {
-        authorization.require(actor.role(), Permission.MANAGE_LOANS);
+        authorization.require(actor, Permission.MANAGE_LOANS);
         return transactions.findOverdueLoans();
     }
 
@@ -200,9 +200,10 @@ public final class CirculationService {
 
     private void authorizeLoanOwnerOrStaff(User actor, Loan loan) {
         if (authorization.isAllowed(actor.role(), Permission.MANAGE_LOANS)) {
+            authorization.require(actor, Permission.MANAGE_LOANS);
             return;
         }
-        authorization.require(actor.role(), Permission.BORROW_BOOK);
+        authorization.require(actor, Permission.BORROW_BOOK);
         if (!(actor instanceof Member member) || !loan.userId().equals(member.id())) {
             throw new SecurityException("Members may only manage their own loans");
         }

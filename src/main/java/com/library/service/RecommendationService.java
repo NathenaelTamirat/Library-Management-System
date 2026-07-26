@@ -50,6 +50,6 @@ public final class RecommendationService {
         if (actor.id().equals(memberId)) {
             return;
         }
-        authorization.require(actor.role(), Permission.MANAGE_LOANS);
+        authorization.require(actor, Permission.MANAGE_LOANS);
     }
 }
