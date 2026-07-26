@@ -37,6 +37,10 @@ public final class Member extends User {
         activeLoans.add(loan);
     }
 
+    public void removeActiveLoan(UUID loanId) {
+        activeLoans.removeIf(loan -> loan.id().equals(loanId));
+    }
+
     public BigDecimal currentFinesBalance() {
         return activeLoans.stream()
                 .map(Loan::calculateOverdueFine)

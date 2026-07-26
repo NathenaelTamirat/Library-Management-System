@@ -2,6 +2,10 @@ package com.library.data;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.library.domain.Loan;
+import com.library.domain.LoanStatus;
+import com.library.domain.ReturnReceipt;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -32,6 +36,7 @@ class JdbcLoanTransactionManagerTest {
         userId = UUID.randomUUID();
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement()) {
+            statement.execute("DROP TABLE IF EXISTS fines");
             statement.execute("DROP TABLE IF EXISTS loans");
             statement.execute("DROP TABLE IF EXISTS books");
             statement.execute("DROP TABLE IF EXISTS users");
@@ -49,7 +54,17 @@ class JdbcLoanTransactionManagerTest {
                         isbn VARCHAR(20) NOT NULL REFERENCES books(isbn),
                         checkout_date DATE NOT NULL,
                         due_date DATE NOT NULL,
+                        return_date DATE,
                         status VARCHAR(20) NOT NULL
+                    )
+                    """);
+            statement.execute("""
+                    CREATE TABLE fines (
+                        id UUID PRIMARY KEY,
+                        loan_id UUID NOT NULL UNIQUE REFERENCES loans(id),
+                        amount DECIMAL(12, 2) NOT NULL,
+                        paid_status BOOLEAN NOT NULL,
+                        issued_date DATE NOT NULL
                     )
                     """);
             statement.execute("INSERT INTO users (id) VALUES ('" + userId + "')");
@@ -109,6 +124,39 @@ class JdbcLoanTransactionManagerTest {
                 LocalDate.of(2026, 8, 9)));
 
         assertEquals(0, scalar("SELECT COUNT(*) FROM loans"));
+        assertEquals(1, scalar("SELECT available_copies FROM books"));
+    }
+
+    @Test
+    void returnRestoresInventoryAndCreatesFineWhenOverdue() throws Exception {
+        Loan loan = transactions.checkout(
+                userId,
+                "9780134685991",
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 7, 10));
+        assertEquals(0, scalar("SELECT available_copies FROM books"));
+
+        ReturnReceipt receipt = transactions.returnLoan(loan.id(), LocalDate.of(2026, 7, 16));
+
+        assertEquals(LoanStatus.RETURNED, receipt.loan().status());
+        assertEquals(1, scalar("SELECT available_copies FROM books"));
+        assertEquals(1, scalar("SELECT COUNT(*) FROM fines"));
+        assertEquals(new BigDecimal("3.00"), receipt.fine().orElseThrow().amount());
+        assertTrue(transactions.findActiveLoanByIsbn("9780134685991").isEmpty());
+    }
+
+    @Test
+    void onTimeReturnDoesNotCreateAFine() throws Exception {
+        Loan loan = transactions.checkout(
+                userId,
+                "9780134685991",
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 7, 20));
+
+        ReturnReceipt receipt = transactions.returnLoan(loan.id(), LocalDate.of(2026, 7, 15));
+
+        assertTrue(receipt.fine().isEmpty());
+        assertEquals(0, scalar("SELECT COUNT(*) FROM fines"));
         assertEquals(1, scalar("SELECT available_copies FROM books"));
     }
 

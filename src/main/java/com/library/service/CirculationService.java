@@ -3,11 +3,14 @@ package com.library.service;
 import com.library.data.LoanTransactionManager;
 import com.library.domain.Loan;
 import com.library.domain.Member;
+import com.library.domain.ReturnReceipt;
+import com.library.domain.User;
 import com.library.security.AuthorizationService;
 import com.library.security.Permission;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.UUID;
 
 public final class CirculationService {
     private final LoanTransactionManager transactions;
@@ -42,5 +45,33 @@ public final class CirculationService {
                 checkoutDate.plusDays(loanDays));
         member.addLoan(loan);
         return loan;
+    }
+
+    public ReturnReceipt returnLoan(User actor, UUID loanId) throws SQLException {
+        Loan existing = transactions.findById(loanId)
+                .orElseThrow(() -> new IllegalStateException("Loan not found: " + loanId));
+        authorizeReturn(actor, existing);
+
+        ReturnReceipt receipt = transactions.returnLoan(loanId, LocalDate.now(clock));
+        if (actor instanceof Member member) {
+            member.removeActiveLoan(loanId);
+        }
+        return receipt;
+    }
+
+    public ReturnReceipt returnSelectedBook(User actor, String isbn) throws SQLException {
+        Loan loan = transactions.findActiveLoanByIsbn(isbn)
+                .orElseThrow(() -> new IllegalStateException("No active loan for ISBN " + isbn));
+        return returnLoan(actor, loan.id());
+    }
+
+    private void authorizeReturn(User actor, Loan loan) {
+        if (authorization.isAllowed(actor.role(), Permission.MANAGE_LOANS)) {
+            return;
+        }
+        authorization.require(actor.role(), Permission.BORROW_BOOK);
+        if (!(actor instanceof Member member) || !loan.userId().equals(member.id())) {
+            throw new SecurityException("Members may only return their own loans");
+        }
     }
 }

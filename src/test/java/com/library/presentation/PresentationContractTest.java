@@ -49,15 +49,18 @@ class PresentationContractTest {
 
         assertEquals("BorderPane", document.getDocumentElement().getNodeName());
         assertEquals(1, document.getElementsByTagName("TextField").getLength());
-        assertEquals(3, document.getElementsByTagName("Button").getLength());
+        assertEquals(4, document.getElementsByTagName("Button").getLength());
         assertEquals("#search",
                 document.getElementsByTagName("Button").item(0)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
         assertEquals("#borrowSelected",
                 document.getElementsByTagName("Button").item(1)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#deleteSelected",
+        assertEquals("#returnSelected",
                 document.getElementsByTagName("Button").item(2)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
+        assertEquals("#deleteSelected",
+                document.getElementsByTagName("Button").item(3)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
         assertNotNull(getClass().getResource("/view/library.css"));
     }

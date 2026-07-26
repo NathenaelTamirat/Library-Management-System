@@ -27,6 +27,9 @@
                 <Button fx:id="borrowButton"
                         text="Borrow selected"
                         onAction="#borrowSelected"/>
+                <Button fx:id="returnButton"
+                        text="Return selected"
+                        onAction="#returnSelected"/>
                 <Button fx:id="deleteButton"
                         text="Delete selected"
                         styleClass="danger-button"

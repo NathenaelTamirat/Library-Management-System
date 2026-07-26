@@ -30,6 +30,8 @@ public final class CatalogController {
     @FXML
     private Button borrowButton;
     @FXML
+    private Button returnButton;
+    @FXML
     private Button deleteButton;
     @FXML
     private ListView<Book> resultsList;
@@ -64,6 +66,11 @@ public final class CatalogController {
                 && authorization.isAllowed(currentUser.role(), Permission.BORROW_BOOK);
         borrowButton.setVisible(member);
         borrowButton.setManaged(member);
+        boolean canReturn = authorization.isAllowed(currentUser.role(), Permission.MANAGE_LOANS)
+                || (currentUser instanceof Member
+                        && authorization.isAllowed(currentUser.role(), Permission.BORROW_BOOK));
+        returnButton.setVisible(canReturn);
+        returnButton.setManaged(canReturn);
         boolean catalogManager = authorization.isAllowed(
                 currentUser.role(), Permission.MANAGE_CATALOG);
         deleteButton.setVisible(catalogManager);
@@ -100,6 +107,17 @@ public final class CatalogController {
         }
         runMutation(borrowButton, "Checking out…", () ->
                 circulation.checkout(member, selected.isbn()));
+    }
+
+    @FXML
+    private void returnSelected() {
+        Book selected = resultsList.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            statusLabel.setText("Select a book to return");
+            return;
+        }
+        runMutation(returnButton, "Returning…", () ->
+                circulation.returnSelectedBook(currentUser, selected.isbn()));
     }
 
     @FXML
