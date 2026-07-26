@@ -2,12 +2,15 @@ package com.library.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.library.data.FineRepository;
 import com.library.data.LoanTransactionManager;
+import com.library.domain.Fine;
 import com.library.domain.Loan;
 import com.library.domain.LoanStatus;
 import com.library.domain.Member;
 import com.library.domain.ReturnReceipt;
 import com.library.security.AuthorizationService;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -26,8 +29,7 @@ class CirculationServiceTest {
         RecordingTransactions transactions = new RecordingTransactions();
         RecordingAuditRepository audits = new RecordingAuditRepository();
         Clock clock = Clock.fixed(Instant.parse("2026-07-26T00:00:00Z"), ZoneOffset.UTC);
-        CirculationService circulation = new CirculationService(
-                transactions, new AuthorizationService(), new AuditService(audits), clock, 21);
+        CirculationService circulation = service(transactions, audits, clock, new RecordingFines(), 21);
         Member member = new Member(
                 UUID.randomUUID(), "Ada", "ada@example.edu", "hash", 2);
 
@@ -43,12 +45,8 @@ class CirculationServiceTest {
     void checkoutStopsBeforePersistenceWhenBorrowingLimitIsReached() throws Exception {
         RecordingTransactions transactions = new RecordingTransactions();
         RecordingAuditRepository audits = new RecordingAuditRepository();
-        CirculationService circulation = new CirculationService(
-                transactions,
-                new AuthorizationService(),
-                new AuditService(audits),
-                Clock.systemUTC(),
-                14);
+        CirculationService circulation = service(
+                transactions, audits, Clock.systemUTC(), new RecordingFines(), 14);
         Member member = new Member(
                 UUID.randomUUID(), "Ada", "ada@example.edu", "hash", 1);
         circulation.checkout(member, "9780134685991");
@@ -60,12 +58,36 @@ class CirculationServiceTest {
     }
 
     @Test
+    void checkoutStopsBeforePersistenceWhenMemberHasUnpaidFines() throws Exception {
+        RecordingTransactions transactions = new RecordingTransactions();
+        RecordingAuditRepository audits = new RecordingAuditRepository();
+        RecordingFines fines = new RecordingFines();
+        Member member = new Member(
+                UUID.randomUUID(), "Ada", "ada@example.edu", "hash", 2);
+        fines.unpaid.put(member.id(), List.of(new Fine(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                new BigDecimal("2.50"),
+                false,
+                LocalDate.of(2026, 7, 1))));
+        CirculationService circulation = service(
+                transactions, audits, Clock.systemUTC(), fines, 14);
+
+        IllegalStateException failure = assertThrows(
+                IllegalStateException.class,
+                () -> circulation.checkout(member, "9780134685991"));
+
+        assertTrue(failure.getMessage().contains("unpaid fines"));
+        assertEquals(0, transactions.calls);
+        assertTrue(audits.actions.isEmpty());
+    }
+
+    @Test
     void memberCanReturnOwnLoanAndFreesBorrowingCapacity() throws Exception {
         RecordingTransactions transactions = new RecordingTransactions();
         RecordingAuditRepository audits = new RecordingAuditRepository();
         Clock clock = Clock.fixed(Instant.parse("2026-07-26T00:00:00Z"), ZoneOffset.UTC);
-        CirculationService circulation = new CirculationService(
-                transactions, new AuthorizationService(), new AuditService(audits), clock, 14);
+        CirculationService circulation = service(transactions, audits, clock, new RecordingFines(), 14);
         Member member = new Member(
                 UUID.randomUUID(), "Ada", "ada@example.edu", "hash", 1);
         Loan loan = circulation.checkout(member, "9780134685991");
@@ -83,8 +105,7 @@ class CirculationServiceTest {
         RecordingTransactions transactions = new RecordingTransactions();
         RecordingAuditRepository audits = new RecordingAuditRepository();
         Clock clock = Clock.fixed(Instant.parse("2026-07-26T00:00:00Z"), ZoneOffset.UTC);
-        CirculationService circulation = new CirculationService(
-                transactions, new AuthorizationService(), new AuditService(audits), clock, 14);
+        CirculationService circulation = service(transactions, audits, clock, new RecordingFines(), 14);
         Member owner = new Member(
                 UUID.randomUUID(), "Ada", "ada@example.edu", "hash", 1);
         Member stranger = new Member(
@@ -96,12 +117,45 @@ class CirculationServiceTest {
         assertEquals(List.of("CHECKOUT"), audits.actions);
     }
 
+    private static CirculationService service(
+            LoanTransactionManager transactions,
+            RecordingAuditRepository audits,
+            Clock clock,
+            FineRepository fines,
+            int loanDays) {
+        return new CirculationService(
+                transactions,
+                fines,
+                new AuthorizationService(),
+                new AuditService(audits),
+                clock,
+                loanDays);
+    }
+
     private static final class RecordingAuditRepository implements com.library.data.AuditRepository {
         private final List<String> actions = new ArrayList<>();
 
         @Override
         public void record(Optional<UUID> userId, String action, String details) {
             actions.add(action);
+        }
+    }
+
+    private static final class RecordingFines implements FineRepository {
+        private final Map<UUID, List<Fine>> unpaid = new HashMap<>();
+
+        @Override
+        public Optional<Fine> findByLoanId(UUID loanId) {
+            return Optional.empty();
+        }
+
+        @Override
+        public List<Fine> findUnpaidByUser(UUID userId) {
+            return unpaid.getOrDefault(userId, List.of());
+        }
+
+        @Override
+        public void markPaid(UUID fineId) {
         }
     }
 

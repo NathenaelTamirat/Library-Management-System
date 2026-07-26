@@ -46,13 +46,15 @@ public final class LibraryApplication extends Application {
         authorization = new AuthorizationService();
         AuditService audit = new AuditService(new JdbcAuditRepository(dataSource, true));
         catalog = new CatalogService(new JdbcBookRepository(dataSource), authorization, audit);
+        JdbcFineRepository fineRepository = new JdbcFineRepository(dataSource);
         circulation = new CirculationService(
                 new JdbcLoanTransactionManager(dataSource),
+                fineRepository,
                 authorization,
                 audit,
                 Clock.systemDefaultZone(),
                 14);
-        fines = new FineService(new JdbcFineRepository(dataSource), authorization, audit);
+        fines = new FineService(fineRepository, authorization, audit);
         recommendations = new RecommendationService(
                 new JdbcRecommendationRepository(dataSource), authorization);
         AuthenticationService authentication = new AuthenticationService(

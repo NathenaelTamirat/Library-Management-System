@@ -1,5 +1,6 @@
 package com.library.service;
 
+import com.library.data.FineRepository;
 import com.library.data.LoanTransactionManager;
 import com.library.domain.Loan;
 import com.library.domain.Member;
@@ -14,6 +15,7 @@ import java.util.UUID;
 
 public final class CirculationService {
     private final LoanTransactionManager transactions;
+    private final FineRepository fines;
     private final AuthorizationService authorization;
     private final AuditService audit;
     private final Clock clock;
@@ -21,6 +23,7 @@ public final class CirculationService {
 
     public CirculationService(
             LoanTransactionManager transactions,
+            FineRepository fines,
             AuthorizationService authorization,
             AuditService audit,
             Clock clock,
@@ -29,6 +32,7 @@ public final class CirculationService {
             throw new IllegalArgumentException("Loan period must be positive");
         }
         this.transactions = transactions;
+        this.fines = fines;
         this.authorization = authorization;
         this.audit = audit;
         this.clock = clock;
@@ -39,6 +43,9 @@ public final class CirculationService {
         authorization.require(member.role(), Permission.BORROW_BOOK);
         if (!member.canBorrow()) {
             throw new IllegalStateException("Member has reached the borrowing limit");
+        }
+        if (!fines.findUnpaidByUser(member.id()).isEmpty()) {
+            throw new IllegalStateException("Member has unpaid fines");
         }
         LocalDate checkoutDate = LocalDate.now(clock);
         Loan loan = transactions.checkout(
