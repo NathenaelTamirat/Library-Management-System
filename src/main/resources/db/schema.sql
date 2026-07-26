@@ -67,6 +67,30 @@ CREATE TABLE IF NOT EXISTS fines (
     issued_date DATE NOT NULL DEFAULT CURRENT_DATE
 );
 
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'hold_status') THEN
+        CREATE TYPE hold_status AS ENUM ('WAITING', 'READY', 'FULFILLED', 'CANCELLED', 'EXPIRED');
+    END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS holds (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    isbn VARCHAR(20) NOT NULL REFERENCES books(isbn),
+    status hold_status NOT NULL DEFAULT 'WAITING',
+    placed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at TIMESTAMPTZ
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS one_active_hold_per_member_book
+    ON holds (user_id, isbn)
+    WHERE status IN ('WAITING', 'READY');
+
+CREATE INDEX IF NOT EXISTS holds_isbn_waiting_idx
+    ON holds (isbn, placed_at)
+    WHERE status IN ('WAITING', 'READY');
+
 CREATE TABLE IF NOT EXISTS audit_log (
     id BIGSERIAL PRIMARY KEY,
     user_id UUID REFERENCES users(id),

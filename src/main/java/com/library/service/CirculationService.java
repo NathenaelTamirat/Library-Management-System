@@ -2,6 +2,7 @@ package com.library.service;
 
 import com.library.data.FineRepository;
 import com.library.data.LoanTransactionManager;
+import com.library.domain.Hold;
 import com.library.domain.Loan;
 import com.library.domain.Member;
 import com.library.domain.ReturnReceipt;
@@ -13,6 +14,7 @@ import java.sql.SQLException;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public final class CirculationService {
@@ -20,6 +22,7 @@ public final class CirculationService {
 
     private final LoanTransactionManager transactions;
     private final FineRepository fines;
+    private final HoldService holds;
     private final AuthorizationService authorization;
     private final AuditService audit;
     private final Clock clock;
@@ -32,11 +35,23 @@ public final class CirculationService {
             AuditService audit,
             Clock clock,
             int loanDays) {
+        this(transactions, fines, null, authorization, audit, clock, loanDays);
+    }
+
+    public CirculationService(
+            LoanTransactionManager transactions,
+            FineRepository fines,
+            HoldService holds,
+            AuthorizationService authorization,
+            AuditService audit,
+            Clock clock,
+            int loanDays) {
         if (loanDays < 1) {
             throw new IllegalArgumentException("Loan period must be positive");
         }
         this.transactions = transactions;
         this.fines = fines;
+        this.holds = holds;
         this.authorization = authorization;
         this.audit = audit;
         this.clock = clock;
@@ -51,6 +66,7 @@ public final class CirculationService {
         if (!fines.findUnpaidByUser(member.id()).isEmpty()) {
             throw new IllegalStateException("Member has unpaid fines");
         }
+        enforceHoldQueue(member.id(), isbn);
         LocalDate checkoutDate = LocalDate.now(clock);
         Loan loan = transactions.checkout(
                 member.id(),
@@ -59,11 +75,25 @@ public final class CirculationService {
                 checkoutDate.plusDays(loanDays),
                 member.borrowingLimit());
         member.addLoan(loan);
+        if (holds != null) {
+            holds.fulfillIfOwned(member.id(), isbn);
+        }
         audit.record(
                 member.id(),
                 "CHECKOUT",
                 "{\"loanId\":\"" + loan.id() + "\",\"isbn\":\"" + isbn + "\"}");
         return loan;
+    }
+
+    private void enforceHoldQueue(UUID memberId, String isbn) throws SQLException {
+        if (holds == null) {
+            return;
+        }
+        Optional<Hold> first = holds.firstActive(isbn);
+        if (first.isPresent() && !first.orElseThrow().userId().equals(memberId)) {
+            throw new IllegalStateException(
+                    "Another member is first in the hold queue for " + isbn);
+        }
     }
 
     public ReturnReceipt returnLoan(User actor, UUID loanId) throws SQLException {

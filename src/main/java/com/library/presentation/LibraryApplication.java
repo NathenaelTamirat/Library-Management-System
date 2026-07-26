@@ -4,6 +4,7 @@ import com.library.data.DataSourceFactory;
 import com.library.data.JdbcAuditRepository;
 import com.library.data.JdbcBookRepository;
 import com.library.data.JdbcFineRepository;
+import com.library.data.JdbcHoldRepository;
 import com.library.data.JdbcLoanTransactionManager;
 import com.library.data.JdbcRecommendationRepository;
 import com.library.data.JdbcUserAdminRepository;
@@ -16,6 +17,7 @@ import com.library.service.AuditService;
 import com.library.service.CatalogService;
 import com.library.service.CirculationService;
 import com.library.service.FineService;
+import com.library.service.HoldService;
 import com.library.service.RecommendationService;
 import com.library.service.UserAdminService;
 import com.zaxxer.hikari.HikariDataSource;
@@ -58,9 +60,15 @@ public final class LibraryApplication extends Application {
                 authorization,
                 audit);
         JdbcFineRepository fineRepository = new JdbcFineRepository(dataSource);
+        HoldService holdService = new HoldService(
+                new JdbcHoldRepository(dataSource),
+                authorization,
+                audit,
+                Clock.systemUTC());
         circulation = new CirculationService(
                 loanTransactions,
                 fineRepository,
+                holdService,
                 authorization,
                 audit,
                 Clock.systemDefaultZone(),

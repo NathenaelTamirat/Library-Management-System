@@ -3,8 +3,10 @@ package com.library.service;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.library.data.FineRepository;
+import com.library.data.HoldRepository;
 import com.library.data.LoanTransactionManager;
 import com.library.domain.Fine;
+import com.library.domain.Hold;
 import com.library.domain.Librarian;
 import com.library.domain.Loan;
 import com.library.domain.LoanStatus;
@@ -81,6 +83,37 @@ class CirculationServiceTest {
         assertTrue(failure.getMessage().contains("unpaid fines"));
         assertEquals(0, transactions.calls);
         assertTrue(audits.actions.isEmpty());
+    }
+
+    @Test
+    void checkoutRejectsJumpAheadWhenAnotherMemberHoldsFirst() throws Exception {
+        RecordingTransactions transactions = new RecordingTransactions();
+        RecordingAuditRepository audits = new RecordingAuditRepository();
+        Member holder = new Member(UUID.randomUUID(), "Ada", "ada@example.edu", "hash", 2);
+        Member jumper = new Member(UUID.randomUUID(), "Grace", "grace@example.edu", "hash", 2);
+        HoldService holdService = new HoldService(
+                new QueueHolds(holder.id(), "9780134685991"),
+                new AuthorizationService(),
+                new AuditService(audits),
+                Clock.systemUTC());
+        CirculationService circulation = new CirculationService(
+                transactions,
+                new RecordingFines(),
+                holdService,
+                new AuthorizationService(),
+                new AuditService(audits),
+                Clock.systemUTC(),
+                14);
+
+        IllegalStateException failure = assertThrows(
+                IllegalStateException.class,
+                () -> circulation.checkout(jumper, "9780134685991"));
+        assertTrue(failure.getMessage().contains("hold queue"));
+        assertEquals(0, transactions.calls);
+
+        Loan loan = circulation.checkout(holder, "9780134685991");
+        assertNotNull(loan);
+        assertEquals(1, transactions.calls);
     }
 
     @Test
@@ -322,6 +355,59 @@ class CirculationServiceTest {
                     .filter(loan -> loan.status() != LoanStatus.RETURNED
                             && loan.status() != LoanStatus.LOST)
                     .findFirst();
+        }
+    }
+
+    private static final class QueueHolds implements HoldRepository {
+        private final Hold head;
+
+        private QueueHolds(UUID holderId, String isbn) {
+            this.head = new Hold(UUID.randomUUID(), holderId, isbn, Instant.now());
+        }
+
+        @Override
+        public Hold place(UUID userId, String isbn, Instant placedAt) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void cancel(UUID holdId) {
+        }
+
+        @Override
+        public void fulfill(UUID holdId) {
+        }
+
+        @Override
+        public Optional<Hold> findById(UUID holdId) {
+            return Optional.of(head);
+        }
+
+        @Override
+        public Optional<Hold> findActiveByUserAndIsbn(UUID userId, String isbn) {
+            return head.userId().equals(userId) && head.isbn().equals(isbn)
+                    ? Optional.of(head)
+                    : Optional.empty();
+        }
+
+        @Override
+        public Optional<Hold> findFirstActiveByIsbn(String isbn) {
+            return head.isbn().equals(isbn) ? Optional.of(head) : Optional.empty();
+        }
+
+        @Override
+        public List<Hold> findActiveByIsbn(String isbn) {
+            return head.isbn().equals(isbn) ? List.of(head) : List.of();
+        }
+
+        @Override
+        public List<Hold> findActiveByUser(UUID userId) {
+            return head.userId().equals(userId) ? List.of(head) : List.of();
+        }
+
+        @Override
+        public boolean bookExists(String isbn) {
+            return true;
         }
     }
 }
