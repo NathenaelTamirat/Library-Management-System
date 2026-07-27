@@ -23,7 +23,8 @@ public final class AuthorizationService {
         permissions.put(Role.LIBRARIAN, EnumSet.of(
                 Permission.SEARCH_CATALOG,
                 Permission.MANAGE_CATALOG,
-                Permission.MANAGE_LOANS));
+                Permission.MANAGE_LOANS,
+                Permission.MANAGE_FINES));
         permissions.put(Role.ADMIN, EnumSet.allOf(Permission.class));
     }
 
