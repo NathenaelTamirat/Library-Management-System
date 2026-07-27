@@ -11,6 +11,8 @@ public final class JdbcCirculationReportRepository implements CirculationReportR
     private static final String SUMMARY = """
             SELECT
                 (SELECT COUNT(*) FROM loans WHERE status IN ('ACTIVE', 'OVERDUE')) AS open_loans,
+                (SELECT COUNT(DISTINCT user_id) FROM loans
+                    WHERE status IN ('ACTIVE', 'OVERDUE')) AS members_with_open_loans,
                 (SELECT COUNT(*) FROM loans WHERE status = 'OVERDUE') AS overdue_loans,
                 (SELECT COUNT(*) FROM fines WHERE paid_status = FALSE AND waived = FALSE) AS unpaid_fines,
                 (SELECT COALESCE(SUM(amount - amount_paid), 0) FROM fines
@@ -34,6 +36,7 @@ public final class JdbcCirculationReportRepository implements CirculationReportR
             results.next();
             return new CirculationSummary(
                     results.getLong("open_loans"),
+                    results.getLong("members_with_open_loans"),
                     results.getLong("overdue_loans"),
                     results.getLong("unpaid_fines"),
                     results.getBigDecimal("unpaid_fine_total"),

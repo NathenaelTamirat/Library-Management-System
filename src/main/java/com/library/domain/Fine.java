@@ -55,7 +55,10 @@ public final class Fine {
     }
 
     public BigDecimal remaining() {
-        return amount.subtract(amountPaid);
+        if (paid) {
+            return BigDecimal.ZERO;
+        }
+        return amount.subtract(amountPaid).max(BigDecimal.ZERO);
     }
 
     public boolean paid() {

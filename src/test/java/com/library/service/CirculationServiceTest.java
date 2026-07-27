@@ -4,11 +4,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.library.data.FineRepository;
 import com.library.data.HoldRepository;
+import com.library.data.LoanPolicyRepository;
 import com.library.data.LoanTransactionManager;
 import com.library.domain.Fine;
 import com.library.domain.Hold;
 import com.library.domain.Librarian;
 import com.library.domain.Loan;
+import com.library.domain.LoanPolicy;
 import com.library.domain.LoanStatus;
 import com.library.domain.Member;
 import com.library.domain.ReturnReceipt;
@@ -42,6 +44,33 @@ class CirculationServiceTest {
         assertEquals(LocalDate.of(2026, 8, 16), transactions.dueDate);
         assertEquals(loan, member.activeLoans().get(0));
         assertEquals("CHECKOUT", audits.actions.get(0));
+    }
+
+    @Test
+    void checkoutUsesCurrentPolicyLoanDaysForDueDate() throws Exception {
+        RecordingTransactions transactions = new RecordingTransactions();
+        RecordingAuditRepository audits = new RecordingAuditRepository();
+        MutablePolicies policyRepository = new MutablePolicies(LoanPolicy.defaults());
+        LoanPolicyService policies = new LoanPolicyService(
+                policyRepository, new AuthorizationService(), new AuditService(audits));
+        Clock clock = Clock.fixed(Instant.parse("2026-07-26T00:00:00Z"), ZoneOffset.UTC);
+        CirculationService circulation = new CirculationService(
+                transactions,
+                new RecordingFines(),
+                null,
+                new AuthorizationService(),
+                new AuditService(audits),
+                clock,
+                policies,
+                2);
+        policyRepository.current = new LoanPolicy(
+                3, new BigDecimal("0.50"), new BigDecimal("50.00"), 2, 5);
+        Member member = new Member(
+                UUID.randomUUID(), "Ada", "ada@example.edu", "hash", 2);
+
+        circulation.checkout(member, "9780134685991");
+
+        assertEquals(transactions.checkoutDate.plusDays(3), transactions.dueDate);
     }
 
     @Test
@@ -263,6 +292,24 @@ class CirculationServiceTest {
                 new AuditService(audits),
                 clock,
                 loanDays);
+    }
+
+    private static final class MutablePolicies implements LoanPolicyRepository {
+        private LoanPolicy current;
+
+        private MutablePolicies(LoanPolicy current) {
+            this.current = current;
+        }
+
+        @Override
+        public LoanPolicy load() {
+            return current;
+        }
+
+        @Override
+        public void save(LoanPolicy policy) {
+            current = policy;
+        }
     }
 
     private static final class RecordingAuditRepository implements com.library.data.AuditRepository {

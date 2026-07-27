@@ -15,6 +15,7 @@ import java.sql.SQLException;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,6 +29,7 @@ public final class CirculationService {
     private final AuditService audit;
     private final Clock clock;
     private final int loanDays;
+    private final LoanPolicyService loanPolicies;
     private final int maxRenewals;
 
     public CirculationService(
@@ -73,6 +75,30 @@ public final class CirculationService {
         this.audit = audit;
         this.clock = clock;
         this.loanDays = loanDays;
+        this.loanPolicies = null;
+        this.maxRenewals = maxRenewals;
+    }
+
+    public CirculationService(
+            LoanTransactionManager transactions,
+            FineRepository fines,
+            HoldService holds,
+            AuthorizationService authorization,
+            AuditService audit,
+            Clock clock,
+            LoanPolicyService loanPolicies,
+            int maxRenewals) {
+        if (maxRenewals < 0) {
+            throw new IllegalArgumentException("Max renewals cannot be negative");
+        }
+        this.transactions = transactions;
+        this.fines = fines;
+        this.holds = holds;
+        this.authorization = authorization;
+        this.audit = audit;
+        this.clock = clock;
+        this.loanDays = 0;
+        this.loanPolicies = Objects.requireNonNull(loanPolicies, "loanPolicies");
         this.maxRenewals = maxRenewals;
     }
 
@@ -100,7 +126,7 @@ public final class CirculationService {
                 member.id(),
                 isbn,
                 checkoutDate,
-                checkoutDate.plusDays(loanDays),
+                checkoutDate.plusDays(configuredLoanDays()),
                 member.borrowingLimit());
         member.addLoan(loan);
         if (holds != null) {
@@ -167,12 +193,20 @@ public final class CirculationService {
         }
         LocalDate today = LocalDate.now(clock);
         LocalDate base = existing.dueDate().isAfter(today) ? existing.dueDate() : today;
-        Loan renewed = transactions.renew(loanId, base.plusDays(loanDays));
+        Loan renewed = transactions.renew(loanId, base.plusDays(configuredLoanDays()));
         audit.record(
                 actor.id(),
                 "RENEW",
                 "{\"loanId\":\"" + loanId + "\",\"dueDate\":\"" + renewed.dueDate() + "\"}");
         return renewed;
+    }
+
+    private int configuredLoanDays() throws SQLException {
+        int configured = loanPolicies == null ? loanDays : loanPolicies.loanDays();
+        if (configured < 1) {
+            throw new IllegalStateException("Loan policy period must be positive");
+        }
+        return configured;
     }
 
     public int reconcileOverdue(User actor) throws SQLException {

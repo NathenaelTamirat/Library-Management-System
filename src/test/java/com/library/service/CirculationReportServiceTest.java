@@ -16,7 +16,7 @@ class CirculationReportServiceTest {
     @Test
     void staffCanLoadSummaryWhileMembersCannot() throws Exception {
         CirculationReportService reports = new CirculationReportService(
-                () -> new CirculationSummary(3, 1, 2, new BigDecimal("3.00"), 4, 10),
+                () -> new CirculationSummary(3, 2, 1, 2, new BigDecimal("3.00"), 4, 10),
                 new AuthorizationService());
         Librarian librarian = new Librarian(
                 UUID.randomUUID(), "Libby", "lib@example.edu", "hash", "desk", false);
@@ -24,6 +24,7 @@ class CirculationReportServiceTest {
 
         CirculationSummary summary = reports.summarize(librarian);
         assertEquals(3, summary.openLoans());
+        assertEquals(2, summary.membersWithOpenLoans());
         assertThrows(SecurityException.class, () -> reports.summarize(member));
     }
 }

@@ -25,6 +25,10 @@ public final class LoanPolicyService {
         return policies.load();
     }
 
+    public int loanDays() throws SQLException {
+        return current().loanDays();
+    }
+
     public LoanPolicy update(User actor, LoanPolicy policy) throws SQLException {
         authorization.require(actor, Permission.MANAGE_USERS);
         policies.save(policy);

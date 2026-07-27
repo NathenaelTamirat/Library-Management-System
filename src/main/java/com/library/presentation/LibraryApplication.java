@@ -102,7 +102,7 @@ public final class LibraryApplication extends Application {
                 authorization,
                 audit,
                 Clock.systemDefaultZone(),
-                policy.loanDays(),
+                loanPolicies,
                 policy.maxRenewals());
         circulationReports = new CirculationReportService(
                 new JdbcCirculationReportRepository(dataSource), authorization);

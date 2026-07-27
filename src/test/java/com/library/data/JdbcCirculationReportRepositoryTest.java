@@ -73,6 +73,7 @@ class JdbcCirculationReportRepositoryTest {
         CirculationSummary summary = reports.summarize();
 
         assertEquals(2, summary.openLoans());
+        assertEquals(1, summary.membersWithOpenLoans());
         assertEquals(1, summary.overdueLoans());
         assertEquals(1, summary.unpaidFines());
         assertEquals(new BigDecimal("4.50"), summary.unpaidFineTotal());

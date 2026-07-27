@@ -10,6 +10,8 @@ public final class Book {
     private int availableCopies;
     private String genre;
     private Integer publicationYear;
+    private String publisher;
+    private String subject;
 
     public Book(String isbn, String title, String author, int totalCopies, int availableCopies) {
         this(isbn, title, author, totalCopies, availableCopies, null, null);
@@ -23,11 +25,24 @@ public final class Book {
             int availableCopies,
             String genre,
             Integer publicationYear) {
+        this(isbn, title, author, totalCopies, availableCopies, genre, publicationYear, null, null);
+    }
+
+    public Book(
+            String isbn,
+            String title,
+            String author,
+            int totalCopies,
+            int availableCopies,
+            String genre,
+            Integer publicationYear,
+            String publisher,
+            String subject) {
         this.isbn = requireText(isbn, "ISBN");
         this.title = requireText(title, "Title");
         this.author = requireText(author, "Author");
         setInventory(totalCopies, availableCopies);
-        setMetadata(genre, publicationYear);
+        setMetadata(genre, publicationYear, publisher, subject);
     }
 
     public String isbn() {
@@ -58,6 +73,14 @@ public final class Book {
         return publicationYear;
     }
 
+    public String publisher() {
+        return publisher;
+    }
+
+    public String subject() {
+        return subject;
+    }
+
     public boolean isAvailable() {
         return availableCopies > 0;
     }
@@ -82,11 +105,18 @@ public final class Book {
     }
 
     public void setMetadata(String genre, Integer publicationYear) {
+        setMetadata(genre, publicationYear, publisher, subject);
+    }
+
+    public void setMetadata(
+            String genre, Integer publicationYear, String publisher, String subject) {
         this.genre = normalizeOptional(genre);
         if (publicationYear != null && (publicationYear < 0 || publicationYear > 9999)) {
             throw new IllegalArgumentException("Publication year must be between 0 and 9999");
         }
         this.publicationYear = publicationYear;
+        this.publisher = normalizeOptional(publisher);
+        this.subject = normalizeOptional(subject);
     }
 
     private void setInventory(int totalCopies, int availableCopies) {
