@@ -13,19 +13,24 @@ import javax.sql.DataSource;
 
 public final class JdbcBookRepository implements BookRepository {
     private static final String COLUMNS =
-            "isbn, title, author, total_copies, available_copies, genre, publication_year";
+            "isbn, title, author, total_copies, available_copies, genre, publication_year, "
+                    + "publisher, subject";
     private static final String SEARCH_LIKE = """
-            SELECT isbn, title, author, total_copies, available_copies, genre, publication_year
+            SELECT isbn, title, author, total_copies, available_copies, genre, publication_year,
+                   publisher, subject
             FROM books
             WHERE LOWER(title) LIKE ?
                OR LOWER(author) LIKE ?
                OR LOWER(COALESCE(genre, '')) LIKE ?
                OR CAST(publication_year AS VARCHAR) LIKE ?
+               OR LOWER(COALESCE(publisher, '')) LIKE ?
+               OR LOWER(COALESCE(subject, '')) LIKE ?
                OR isbn = ?
             ORDER BY title
             """;
     private static final String SEARCH_FTS = """
             SELECT isbn, title, author, total_copies, available_copies, genre, publication_year,
+                   publisher, subject,
                    ts_rank(search_document, plainto_tsquery('english', ?)) AS rank
             FROM books
             WHERE search_document @@ plainto_tsquery('english', ?)
@@ -73,7 +78,9 @@ public final class JdbcBookRepository implements BookRepository {
             statement.setString(2, pattern);
             statement.setString(3, pattern);
             statement.setString(4, pattern);
-            statement.setString(5, query);
+            statement.setString(5, pattern);
+            statement.setString(6, pattern);
+            statement.setString(7, query);
             return readBooks(statement);
         }
     }
@@ -102,8 +109,9 @@ public final class JdbcBookRepository implements BookRepository {
     public void save(Book book) throws SQLException {
         String sql = """
                 INSERT INTO books (
-                    isbn, title, author, total_copies, available_copies, genre, publication_year)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                    isbn, title, author, total_copies, available_copies, genre, publication_year,
+                    publisher, subject)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
         executeUpdate(sql, book);
     }
@@ -114,7 +122,7 @@ public final class JdbcBookRepository implements BookRepository {
         String sql = """
                 UPDATE books
                 SET title = ?, author = ?, total_copies = ?, available_copies = ?,
-                    genre = ?, publication_year = ?
+                    genre = ?, publication_year = ?, publisher = ?, subject = ?
                 WHERE isbn = ?
                 """;
         try (Connection connection = dataSource.getConnection()) {
@@ -135,7 +143,9 @@ public final class JdbcBookRepository implements BookRepository {
                     statement.setInt(4, book.availableCopies());
                     setOptionalText(statement, 5, book.genre());
                     setOptionalYear(statement, 6, book.publicationYear());
-                    statement.setString(7, book.isbn());
+                    setOptionalText(statement, 7, book.publisher());
+                    setOptionalText(statement, 8, book.subject());
+                    statement.setString(9, book.isbn());
                     if (statement.executeUpdate() != 1) {
                         throw new SQLException("Book could not be updated: " + book.isbn());
                     }
@@ -169,6 +179,8 @@ public final class JdbcBookRepository implements BookRepository {
             statement.setInt(5, book.availableCopies());
             setOptionalText(statement, 6, book.genre());
             setOptionalYear(statement, 7, book.publicationYear());
+            setOptionalText(statement, 8, book.publisher());
+            setOptionalText(statement, 9, book.subject());
             statement.executeUpdate();
         }
     }
@@ -201,6 +213,8 @@ public final class JdbcBookRepository implements BookRepository {
                 results.getInt("total_copies"),
                 results.getInt("available_copies"),
                 results.getString("genre"),
-                publicationYear);
+                publicationYear,
+                results.getString("publisher"),
+                results.getString("subject"));
     }
 }

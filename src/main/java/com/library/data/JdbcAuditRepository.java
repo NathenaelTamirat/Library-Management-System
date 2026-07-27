@@ -6,8 +6,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import javax.sql.DataSource;
@@ -38,6 +40,13 @@ public final class JdbcAuditRepository implements AuditRepository {
             SELECT id, user_id, action, occurred_at, details
             FROM audit_log
             WHERE user_id = ?
+            ORDER BY occurred_at DESC, id DESC
+            LIMIT ?
+            """;
+    private static final String FIND_BETWEEN = """
+            SELECT id, user_id, action, occurred_at, details
+            FROM audit_log
+            WHERE occurred_at BETWEEN ? AND ?
             ORDER BY occurred_at DESC, id DESC
             LIMIT ?
             """;
@@ -87,11 +96,28 @@ public final class JdbcAuditRepository implements AuditRepository {
         return query(FIND_BY_USER, null, userId, limit);
     }
 
+    @Override
+    public List<AuditEntry> findBetween(Instant from, Instant to, int limit) throws SQLException {
+        Objects.requireNonNull(from, "from");
+        Objects.requireNonNull(to, "to");
+        validateLimit(limit);
+        if (from.isAfter(to)) {
+            throw new IllegalArgumentException("'from' must not be after 'to'");
+        }
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(FIND_BETWEEN)) {
+            statement.setTimestamp(1, Timestamp.from(from));
+            statement.setTimestamp(2, Timestamp.from(to));
+            statement.setInt(3, limit);
+            try (ResultSet results = statement.executeQuery()) {
+                return mapAll(results);
+            }
+        }
+    }
+
     private List<AuditEntry> query(String sql, String action, UUID userId, int limit)
             throws SQLException {
-        if (limit < 1) {
-            throw new IllegalArgumentException("Limit must be positive");
-        }
+        validateLimit(limit);
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             int index = 1;
@@ -103,13 +129,23 @@ public final class JdbcAuditRepository implements AuditRepository {
             }
             statement.setInt(index, limit);
             try (ResultSet results = statement.executeQuery()) {
-                List<AuditEntry> entries = new ArrayList<>();
-                while (results.next()) {
-                    entries.add(map(results));
-                }
-                return entries;
+                return mapAll(results);
             }
         }
+    }
+
+    private static void validateLimit(int limit) {
+        if (limit < 1) {
+            throw new IllegalArgumentException("Limit must be positive");
+        }
+    }
+
+    private static List<AuditEntry> mapAll(ResultSet results) throws SQLException {
+        List<AuditEntry> entries = new ArrayList<>();
+        while (results.next()) {
+            entries.add(map(results));
+        }
+        return entries;
     }
 
     private static AuditEntry map(ResultSet results) throws SQLException {

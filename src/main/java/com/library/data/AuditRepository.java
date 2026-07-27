@@ -2,6 +2,7 @@ package com.library.data;
 
 import com.library.domain.AuditEntry;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,4 +15,6 @@ public interface AuditRepository {
     List<AuditEntry> findByAction(String action, int limit) throws SQLException;
 
     List<AuditEntry> findByUser(UUID userId, int limit) throws SQLException;
+
+    List<AuditEntry> findBetween(Instant from, Instant to, int limit) throws SQLException;
 }
