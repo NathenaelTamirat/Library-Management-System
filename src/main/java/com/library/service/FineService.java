@@ -63,14 +63,14 @@ public final class FineService {
     }
 
     public void pay(User actor, UUID fineId) throws SQLException {
-        authorization.require(actor, Permission.MANAGE_LOANS);
+        authorization.require(actor, Permission.MANAGE_FINES);
         fines.markPaid(fineId);
         recordEvent(fineId, actor.id(), FineEventType.PAY, BigDecimal.ZERO);
         audit.record(actor.id(), "PAY_FINE", "{\"fineId\":\"" + fineId + "\"}");
     }
 
     public void payPartial(User actor, UUID fineId, BigDecimal payment) throws SQLException {
-        authorization.require(actor, Permission.MANAGE_LOANS);
+        authorization.require(actor, Permission.MANAGE_FINES);
         if (payment == null || payment.signum() <= 0) {
             throw new IllegalArgumentException("Payment must be positive");
         }
@@ -83,7 +83,7 @@ public final class FineService {
     }
 
     public void waive(User actor, UUID fineId) throws SQLException {
-        authorization.require(actor, Permission.MANAGE_LOANS);
+        authorization.require(actor, Permission.MANAGE_FINES);
         fines.waive(fineId);
         recordEvent(fineId, actor.id(), FineEventType.WAIVE, BigDecimal.ZERO);
         audit.record(actor.id(), "WAIVE_FINE", "{\"fineId\":\"" + fineId + "\"}");

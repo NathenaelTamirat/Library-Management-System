@@ -6,11 +6,14 @@ import com.library.domain.User;
 import com.library.security.AuthorizationService;
 import com.library.security.Permission;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public final class AuditService {
+    private static final int DATE_RANGE_LIMIT = 100;
+
     private final AuditRepository audits;
     private final AuthorizationService authorization;
 
@@ -44,6 +47,12 @@ public final class AuditService {
     public List<AuditEntry> byUser(User actor, UUID userId, int limit) throws SQLException {
         requireView(actor);
         return audits.findByUser(userId, limit);
+    }
+
+    public List<AuditEntry> entriesBetween(User actor, Instant from, Instant to)
+            throws SQLException {
+        requireView(actor);
+        return audits.findBetween(from, to, DATE_RANGE_LIMIT);
     }
 
     private void requireView(User actor) {
