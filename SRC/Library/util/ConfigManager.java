@@ -1,212 +1,431 @@
-package util;
+package library.util;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.file.*;
 import java.util.Properties;
 
 /**
- * Configuration Manager for Supabase Settings
- * 
- * This class manages configuration properties from both file and environment variables.
- * Environment variables take precedence over file settings.
- * 
- * @author Library Management Team
- * @version 2.0
- * @since 2024
+ * Configuration manager for handling application configuration.
+ * This class demonstrates file I/O operations using Properties and BufferedReader/Writer.
  */
 public class ConfigManager {
+    private static final String DEFAULT_CONFIG_FILE = "config/config.properties";
+    private static final String RESOURCE_CONFIG_FILE = "config.properties";
     
-    private static final String CONFIG_FILE = "config/supabase_config.properties";
-    private static Properties properties = null;
-    private static boolean isInitialized = false;
-    private static boolean isInitializing = false; // Prevent infinite loops
+    private static ConfigManager instance;
+    private Properties properties;
+    private Path configFile;
+    private Logger logger;
     
-    // Security: Prevent instantiation
+    /**
+     * Private constructor for singleton pattern.
+     */
     private ConfigManager() {
-        throw new UnsupportedOperationException("ConfigManager is a utility class and cannot be instantiated");
+        this.properties = new Properties();
+        this.configFile = Paths.get(DEFAULT_CONFIG_FILE);
+        this.logger = Logger.getInstance();
+        loadConfiguration();
     }
     
     /**
-     * Initializes the configuration system
-     */
-    public static void initialize() {
-        if (isInitialized || isInitializing) {
-            return;
-        }
-        
-        isInitializing = true;
-        
-        try {
-            System.out.println("Initializing configuration manager...");
-            
-            // Load from properties file first
-            loadFromFile();
-            
-            // Load from environment variables (overrides file)
-            loadFromEnvironment();
-            
-            // Validate configuration
-            validateConfiguration();
-            
-            isInitialized = true;
-            System.out.println("Configuration manager initialized successfully");
-            
-        } catch (Exception e) {
-            System.err.println("Failed to initialize configuration: " + e.getMessage());
-            throw new RuntimeException("Configuration initialization failed", e);
-        } finally {
-            isInitializing = false;
-        }
-    }
-    
-    /**
-     * Gets a configuration value
+     * Gets the singleton instance of ConfigManager.
      * 
-     * @param key The configuration key
-     * @return The configuration value or null if not found
+     * @return the ConfigManager instance
      */
-    public static String getConfig(String key) {
-        if (!isInitialized && !isInitializing) {
-            initialize();
+    public static synchronized ConfigManager getInstance() {
+        if (instance == null) {
+            instance = new ConfigManager();
+        }
+        return instance;
+    }
+    
+    /**
+     * Loads configuration from file.
+     * First tries to load from external config file, then falls back to resource file.
+     */
+    private void loadConfiguration() {
+        // Try to load from external config file first
+        if (Files.exists(configFile)) {
+            loadFromFile(configFile);
+        } else {
+            // Fall back to resource file
+            loadFromResource();
+            // Create external config file for future use
+            createDefaultConfigFile();
         }
         
-        if (properties == null) {
-            return null;
+        logger.logInfo("Configuration loaded successfully");
+    }
+    
+    /**
+     * Loads configuration from an external file using BufferedReader.
+     * 
+     * @param file the path to the configuration file
+     */
+    private void loadFromFile(Path file) {
+        try (BufferedReader reader = Files.newBufferedReader(file)) {
+            properties.load(reader);
+            logger.logFileOperation("READ", file.toString(), true);
+        } catch (IOException e) {
+            logger.logError("Failed to load configuration from file: " + file, e);
+            logger.logFileOperation("READ", file.toString(), false);
         }
+    }
+    
+    /**
+     * Loads configuration from resource file.
+     */
+    private void loadFromResource() {
+        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(RESOURCE_CONFIG_FILE)) {
+            if (inputStream != null) {
+                properties.load(inputStream);
+                logger.logInfo("Configuration loaded from resource file");
+            } else {
+                logger.logWarning("Resource configuration file not found, using defaults");
+                loadDefaultProperties();
+            }
+        } catch (IOException e) {
+            logger.logError("Failed to load configuration from resource", e);
+            loadDefaultProperties();
+        }
+    }
+    
+    /**
+     * Creates a default configuration file in the config directory.
+     */
+    private void createDefaultConfigFile() {
+        try {
+            // Create config directory if it doesn't exist
+            Path configDir = configFile.getParent();
+            if (configDir != null && !Files.exists(configDir)) {
+                Files.createDirectories(configDir);
+            }
+            
+            // Save current properties to external file
+            saveConfiguration();
+            logger.logInfo("Default configuration file created: " + configFile);
+        } catch (IOException e) {
+            logger.logError("Failed to create default configuration file", e);
+        }
+    }
+    
+    /**
+     * Loads default properties when no configuration file is available.
+     */
+    private void loadDefaultProperties() {
+        properties.setProperty("database.url", "jdbc:sqlite:data/library.db");
+        properties.setProperty("database.driver", "org.sqlite.JDBC");
+        properties.setProperty("system.name", "Library Management System");
+        properties.setProperty("system.version", "1.0.0");
+        properties.setProperty("max.loan.days", "14");
+        properties.setProperty("max.books.per.user", "5");
+        properties.setProperty("fine.per.day", "0.50");
+        properties.setProperty("log.level", "INFO");
+        properties.setProperty("log.directory", "logs");
+        properties.setProperty("backup.directory", "backups");
+        properties.setProperty("backup.auto.enabled", "true");
+        properties.setProperty("backup.retention.days", "30");
         
+        logger.logInfo("Default configuration properties loaded");
+    }
+    
+    /**
+     * Saves the current configuration to file using BufferedWriter.
+     */
+    public void saveConfiguration() {
+        try {
+            // Ensure config directory exists
+            Path configDir = configFile.getParent();
+            if (configDir != null && !Files.exists(configDir)) {
+                Files.createDirectories(configDir);
+            }
+            
+            try (BufferedWriter writer = Files.newBufferedWriter(configFile)) {
+                properties.store(writer, "Library Management System Configuration");
+                logger.logFileOperation("WRITE", configFile.toString(), true);
+                logger.logInfo("Configuration saved successfully");
+            }
+        } catch (IOException e) {
+            logger.logError("Failed to save configuration", e);
+            logger.logFileOperation("WRITE", configFile.toString(), false);
+        }
+    }
+    
+    /**
+     * Gets a configuration property value.
+     * 
+     * @param key the property key
+     * @return the property value, or null if not found
+     */
+    public String getProperty(String key) {
         return properties.getProperty(key);
     }
     
     /**
-     * Gets a configuration value with default
+     * Gets a configuration property value with a default.
      * 
-     * @param key The configuration key
-     * @param defaultValue The default value if not found
-     * @return The configuration value or default
+     * @param key the property key
+     * @param defaultValue the default value if key is not found
+     * @return the property value, or default value if not found
      */
-    public static String getConfig(String key, String defaultValue) {
-        String value = getConfig(key);
-        return value != null ? value : defaultValue;
+    public String getProperty(String key, String defaultValue) {
+        return properties.getProperty(key, defaultValue);
     }
     
     /**
-     * Gets an integer configuration value with default
+     * Sets a configuration property value.
      * 
-     * @param key The configuration key
-     * @param defaultValue The default value if not found or invalid
-     * @return The integer value or default
+     * @param key the property key
+     * @param value the property value
      */
-    public static int getIntConfig(String key, int defaultValue) {
-        String value = getConfig(key);
+    public void setProperty(String key, String value) {
+        String oldValue = properties.getProperty(key);
+        properties.setProperty(key, value);
+        logger.logConfigChange(key, oldValue, value);
+    }
+    
+    /**
+     * Gets a property as an integer.
+     * 
+     * @param key the property key
+     * @param defaultValue the default value if key is not found or invalid
+     * @return the property value as integer
+     */
+    public int getIntProperty(String key, int defaultValue) {
+        String value = properties.getProperty(key);
         if (value != null) {
             try {
-                return Integer.parseInt(value);
+                return Integer.parseInt(value.trim());
             } catch (NumberFormatException e) {
-                System.err.println("Invalid integer configuration for " + key + ": " + value);
+                logger.logWarning("Invalid integer value for property " + key + ": " + value);
             }
         }
         return defaultValue;
     }
     
     /**
-     * Loads configuration from properties file
-     */
-    private static void loadFromFile() {
-        try (InputStream input = ConfigManager.class.getClassLoader().getResourceAsStream(CONFIG_FILE)) {
-            if (input != null) {
-                properties = new Properties();
-                properties.load(input);
-                System.out.println("Configuration loaded from file: " + CONFIG_FILE);
-            } else {
-                System.out.println("Configuration file not found: " + CONFIG_FILE);
-                properties = new Properties();
-            }
-        } catch (IOException e) {
-            System.err.println("Error loading configuration file: " + e.getMessage());
-            properties = new Properties();
-        }
-    }
-    
-    /**
-     * Loads configuration from environment variables
-     */
-    private static void loadFromEnvironment() {
-        String[] envKeys = {
-            "SUPABASE_URL",
-            "SUPABASE_ANON_KEY",
-            "API_VERSION",
-            "REST_ENDPOINT",
-            "CONNECTION_TIMEOUT",
-            "REQUEST_TIMEOUT",
-            "MAX_RETRIES"
-        };
-        
-        for (String key : envKeys) {
-            String envValue = System.getenv(key);
-            if (envValue != null && !envValue.trim().isEmpty()) {
-                if (properties == null) {
-                    properties = new Properties();
-                }
-                properties.setProperty(key, envValue);
-                System.out.println("Loaded environment variable: " + key);
-            }
-        }
-    }
-    
-    /**
-     * Validates that all required configuration is present
-     */
-    private static void validateConfiguration() {
-        String[] requiredKeys = {"SUPABASE_URL", "SUPABASE_ANON_KEY"};
-        
-        for (String key : requiredKeys) {
-            String value = properties.getProperty(key);
-            if (value == null || value.trim().isEmpty()) {
-                throw new RuntimeException("Missing required configuration: " + key);
-            }
-        }
-        
-        // Validate URL format
-        String url = properties.getProperty("SUPABASE_URL");
-        if (!url.startsWith("https://")) {
-            throw new RuntimeException("Invalid Supabase URL format: " + url);
-        }
-        
-        // Validate API key format (basic check)
-        String apiKey = properties.getProperty("SUPABASE_ANON_KEY");
-        if (apiKey.length() < 50) {
-            throw new RuntimeException("Invalid Supabase API key format");
-        }
-    }
-    
-    /**
-     * Gets all configuration as a formatted string for debugging
+     * Gets a property as a double.
      * 
-     * @return Configuration summary (without sensitive data)
+     * @param key the property key
+     * @param defaultValue the default value if key is not found or invalid
+     * @return the property value as double
      */
-    public static String getConfigurationSummary() {
-        if (!isInitialized && !isInitializing) {
-            initialize();
+    public double getDoubleProperty(String key, double defaultValue) {
+        String value = properties.getProperty(key);
+        if (value != null) {
+            try {
+                return Double.parseDouble(value.trim());
+            } catch (NumberFormatException e) {
+                logger.logWarning("Invalid double value for property " + key + ": " + value);
+            }
         }
-        
-        StringBuilder summary = new StringBuilder();
-        summary.append("Configuration Summary:\n");
-        summary.append("Initialized: ").append(isInitialized).append("\n");
-        summary.append("Supabase URL: ").append(getConfig("SUPABASE_URL")).append("\n");
-        summary.append("API Version: ").append(getConfig("API_VERSION", "v1")).append("\n");
-        summary.append("Connection Timeout: ").append(getIntConfig("CONNECTION_TIMEOUT", 30)).append("s\n");
-        summary.append("Request Timeout: ").append(getIntConfig("REQUEST_TIMEOUT", 30)).append("s\n");
-        summary.append("Max Retries: ").append(getIntConfig("MAX_RETRIES", 3)).append("\n");
-        
-        return summary.toString();
+        return defaultValue;
     }
     
     /**
-     * Checks if configuration is properly initialized
+     * Gets a property as a boolean.
      * 
-     * @return true if initialized, false otherwise
+     * @param key the property key
+     * @param defaultValue the default value if key is not found
+     * @return the property value as boolean
      */
-    public static boolean isInitialized() {
-        return isInitialized;
+    public boolean getBooleanProperty(String key, boolean defaultValue) {
+        String value = properties.getProperty(key);
+        if (value != null) {
+            return Boolean.parseBoolean(value.trim());
+        }
+        return defaultValue;
     }
-} 
+    
+    /**
+     * Sets an integer property.
+     * 
+     * @param key the property key
+     * @param value the integer value
+     */
+    public void setIntProperty(String key, int value) {
+        setProperty(key, String.valueOf(value));
+    }
+    
+    /**
+     * Sets a double property.
+     * 
+     * @param key the property key
+     * @param value the double value
+     */
+    public void setDoubleProperty(String key, double value) {
+        setProperty(key, String.valueOf(value));
+    }
+    
+    /**
+     * Sets a boolean property.
+     * 
+     * @param key the property key
+     * @param value the boolean value
+     */
+    public void setBooleanProperty(String key, boolean value) {
+        setProperty(key, String.valueOf(value));
+    }
+    
+    /**
+     * Checks if a property exists.
+     * 
+     * @param key the property key
+     * @return true if the property exists, false otherwise
+     */
+    public boolean hasProperty(String key) {
+        return properties.containsKey(key);
+    }
+    
+    /**
+     * Removes a property.
+     * 
+     * @param key the property key to remove
+     * @return the previous value, or null if not found
+     */
+    public String removeProperty(String key) {
+        String oldValue = properties.getProperty(key);
+        properties.remove(key);
+        if (oldValue != null) {
+            logger.logConfigChange(key, oldValue, "<removed>");
+        }
+        return oldValue;
+    }
+    
+    /**
+     * Gets the database URL.
+     * 
+     * @return the database URL
+     */
+    public String getDatabaseUrl() {
+        return getProperty("database.url", "jdbc:sqlite:data/library.db");
+    }
+    
+    /**
+     * Gets the database driver class name.
+     * 
+     * @return the database driver class name
+     */
+    public String getDatabaseDriver() {
+        return getProperty("database.driver", "org.sqlite.JDBC");
+    }
+    
+    /**
+     * Gets the maximum loan days.
+     * 
+     * @return the maximum loan days
+     */
+    public int getMaxLoanDays() {
+        return getIntProperty("max.loan.days", 14);
+    }
+    
+    /**
+     * Gets the maximum books per user.
+     * 
+     * @return the maximum books per user
+     */
+    public int getMaxBooksPerUser() {
+        return getIntProperty("max.books.per.user", 5);
+    }
+    
+    /**
+     * Gets the fine per day amount.
+     * 
+     * @return the fine per day amount
+     */
+    public double getFinePerDay() {
+        return getDoubleProperty("fine.per.day", 0.50);
+    }
+    
+    /**
+     * Gets the log level.
+     * 
+     * @return the log level
+     */
+    public String getLogLevel() {
+        return getProperty("log.level", "INFO");
+    }
+    
+    /**
+     * Gets the log directory.
+     * 
+     * @return the log directory
+     */
+    public String getLogDirectory() {
+        return getProperty("log.directory", "logs");
+    }
+    
+    /**
+     * Gets the backup directory.
+     * 
+     * @return the backup directory
+     */
+    public String getBackupDirectory() {
+        return getProperty("backup.directory", "backups");
+    }
+    
+    /**
+     * Checks if auto backup is enabled.
+     * 
+     * @return true if auto backup is enabled, false otherwise
+     */
+    public boolean isAutoBackupEnabled() {
+        return getBooleanProperty("backup.auto.enabled", true);
+    }
+    
+    /**
+     * Gets the backup retention days.
+     * 
+     * @return the backup retention days
+     */
+    public int getBackupRetentionDays() {
+        return getIntProperty("backup.retention.days", 30);
+    }
+    
+    /**
+     * Gets the system name.
+     * 
+     * @return the system name
+     */
+    public String getSystemName() {
+        return getProperty("system.name", "Library Management System");
+    }
+    
+    /**
+     * Gets the system version.
+     * 
+     * @return the system version
+     */
+    public String getSystemVersion() {
+        return getProperty("system.version", "1.0.0");
+    }
+    
+    /**
+     * Reloads the configuration from file.
+     */
+    public void reloadConfiguration() {
+        properties.clear();
+        loadConfiguration();
+        logger.logInfo("Configuration reloaded");
+    }
+    
+    /**
+     * Gets all properties as a copy.
+     * 
+     * @return a copy of all properties
+     */
+    public Properties getAllProperties() {
+        Properties copy = new Properties();
+        copy.putAll(properties);
+        return copy;
+    }
+    
+    /**
+     * Gets the configuration file path.
+     * 
+     * @return the configuration file path
+     */
+    public Path getConfigFilePath() {
+        return configFile;
+    }
+}
