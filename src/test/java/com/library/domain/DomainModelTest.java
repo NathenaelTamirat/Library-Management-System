@@ -59,4 +59,42 @@ class DomainModelTest {
         assertEquals(new BigDecimal("3.00"), member.currentFinesBalance());
         assertThrows(IllegalStateException.class, () -> member.addLoan(loan));
     }
+
+    @Test
+    void fineRemainingReflectsPartialPayments() {
+        Fine fine = new Fine(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                new BigDecimal("10.00"),
+                new BigDecimal("3.25"),
+                false,
+                LocalDate.of(2026, 7, 26));
+
+        assertEquals(new BigDecimal("6.75"), fine.remaining());
+        assertTrue(fine.remaining().signum() >= 0);
+    }
+
+    @Test
+    void waivedFineHasNoRemainingBalance() {
+        Fine waived = new Fine(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                new BigDecimal("10.00"),
+                BigDecimal.ZERO,
+                true,
+                LocalDate.of(2026, 7, 26));
+
+        assertEquals(BigDecimal.ZERO, waived.remaining());
+    }
+
+    @Test
+    void fineRejectsPaymentsGreaterThanItsAmount() {
+        assertThrows(IllegalArgumentException.class, () -> new Fine(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                new BigDecimal("10.00"),
+                new BigDecimal("10.01"),
+                false,
+                LocalDate.of(2026, 7, 26)));
+    }
 }

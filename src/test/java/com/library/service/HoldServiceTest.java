@@ -151,6 +151,11 @@ class HoldServiceTest {
         public List<com.library.domain.AuditEntry> findByUser(UUID userId, int limit) {
             return List.of();
         }
+
+        @Override
+        public List<com.library.domain.AuditEntry> findBetween(Instant from, Instant to, int limit) {
+            return List.of();
+        }
     }
 
     private static final class RecordingHolds implements HoldRepository {

@@ -3,6 +3,7 @@ package com.library.presentation;
 import com.library.domain.AuditEntry;
 import com.library.domain.User;
 import com.library.service.AuditService;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import javafx.collections.FXCollections;
@@ -25,6 +26,10 @@ public final class AuditLogController {
     private TextField actionFilter;
     @FXML
     private TextField userFilter;
+    @FXML
+    private TextField fromFilter;
+    @FXML
+    private TextField toFilter;
     @FXML
     private ListView<AuditEntry> entriesList;
     @FXML
@@ -54,6 +59,8 @@ public final class AuditLogController {
         });
         actionFilter.setOnAction(ignored -> refresh());
         userFilter.setOnAction(ignored -> refresh());
+        fromFilter.setOnAction(ignored -> refresh());
+        toFilter.setOnAction(ignored -> refresh());
         refresh();
     }
 
@@ -61,9 +68,26 @@ public final class AuditLogController {
     private void refresh() {
         String action = actionFilter.getText() == null ? "" : actionFilter.getText().strip();
         String userText = userFilter.getText() == null ? "" : userFilter.getText().strip();
+        String fromText = fromFilter.getText() == null ? "" : fromFilter.getText().strip();
+        String toText = toFilter.getText() == null ? "" : toFilter.getText().strip();
         Task<List<AuditEntry>> task = new Task<>() {
             @Override
             protected List<AuditEntry> call() throws Exception {
+                if (!fromText.isBlank() || !toText.isBlank()) {
+                    if (fromText.isBlank() || toText.isBlank()) {
+                        throw new IllegalArgumentException(
+                                "Both from and to timestamps are required");
+                    }
+                    List<AuditEntry> entries = audits.entriesBetween(
+                            actor, Instant.parse(fromText), Instant.parse(toText));
+                    UUID userId = userText.isBlank() ? null : UUID.fromString(userText);
+                    return entries.stream()
+                            .filter(entry -> action.isBlank()
+                                    || entry.action().equalsIgnoreCase(action))
+                            .filter(entry -> userId == null
+                                    || entry.userId().filter(userId::equals).isPresent())
+                            .toList();
+                }
                 if (!userText.isBlank()) {
                     UUID userId = UUID.fromString(userText);
                     List<AuditEntry> entries = audits.byUser(actor, userId, LIMIT);

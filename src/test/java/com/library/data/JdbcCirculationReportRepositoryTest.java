@@ -2,10 +2,12 @@ package com.library.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.library.domain.Book;
 import com.library.domain.CirculationSummary;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.Statement;
+import java.util.List;
 import java.util.UUID;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,8 +30,12 @@ class JdbcCirculationReportRepositoryTest {
             statement.execute("""
                     CREATE TABLE books (
                         isbn VARCHAR(20) PRIMARY KEY,
+                        title VARCHAR(500) NOT NULL,
+                        author VARCHAR(300) NOT NULL,
                         total_copies INTEGER NOT NULL,
-                        available_copies INTEGER NOT NULL
+                        available_copies INTEGER NOT NULL,
+                        genre VARCHAR(100),
+                        publication_year INTEGER
                     )
                     """);
             statement.execute("""
@@ -54,8 +60,15 @@ class JdbcCirculationReportRepositoryTest {
             UUID openLoan = UUID.randomUUID();
             UUID overdueLoan = UUID.randomUUID();
             statement.execute("INSERT INTO users (id) VALUES ('" + userId + "')");
-            statement.execute(
-                    "INSERT INTO books VALUES ('9780134685991', 5, 2), ('9780321356680', 3, 0)");
+            statement.execute("""
+                    INSERT INTO books VALUES
+                        ('9780134685991', 'Effective Java', 'Joshua Bloch', 5, 2,
+                            'Programming', 2018),
+                        ('9780321356680', 'Java Concurrency in Practice', 'Brian Goetz', 3, 0,
+                            'Programming', 2006),
+                        ('9780201633610', 'Design Patterns', 'Erich Gamma', 2, 0,
+                            NULL, NULL)
+                    """);
             statement.execute("INSERT INTO loans VALUES ('" + openLoan + "', '" + userId
                     + "', '9780134685991', 'ACTIVE')");
             statement.execute("INSERT INTO loans VALUES ('" + overdueLoan + "', '" + userId
@@ -78,6 +91,17 @@ class JdbcCirculationReportRepositoryTest {
         assertEquals(1, summary.unpaidFines());
         assertEquals(new BigDecimal("4.50"), summary.unpaidFineTotal());
         assertEquals(2, summary.availableCopies());
-        assertEquals(8, summary.totalCopies());
+        assertEquals(10, summary.totalCopies());
+    }
+
+    @Test
+    void listsOnlyZeroAvailabilityTitlesOrderedByTitle() throws Exception {
+        List<Book> books = reports.listZeroAvailability();
+
+        assertEquals(List.of("Design Patterns", "Java Concurrency in Practice"),
+                books.stream().map(Book::title).toList());
+        assertEquals(List.of(0, 0), books.stream().map(Book::availableCopies).toList());
+        assertEquals("Programming", books.get(1).genre());
+        assertEquals(2006, books.get(1).publicationYear());
     }
 }

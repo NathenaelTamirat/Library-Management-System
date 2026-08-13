@@ -22,6 +22,12 @@
         <Button fx:id="refreshButton" text="_Refresh" mnemonicParsing="true"
                 accessibleText="Refresh audit log" onAction="#refresh"/>
     </HBox>
+    <HBox spacing="10">
+        <TextField fx:id="fromFilter" promptText="From (ISO-8601 instant)"
+                   accessibleText="Audit range start timestamp" HBox.hgrow="ALWAYS"/>
+        <TextField fx:id="toFilter" promptText="To (ISO-8601 instant)"
+                   accessibleText="Audit range end timestamp" HBox.hgrow="ALWAYS"/>
+    </HBox>
     <ListView fx:id="entriesList" prefHeight="300" accessibleText="Audit log entries"/>
     <HBox spacing="10">
         <Button text="_Close" mnemonicParsing="true" accessibleText="Close audit log"

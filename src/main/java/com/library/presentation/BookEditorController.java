@@ -31,6 +31,10 @@ public final class BookEditorController {
     @FXML
     private TextField genreField;
     @FXML
+    private TextField publisherField;
+    @FXML
+    private TextField subjectField;
+    @FXML
     private Spinner<Integer> yearSpinner;
     @FXML
     private Spinner<Integer> copiesSpinner;
@@ -63,6 +67,8 @@ public final class BookEditorController {
             titleField.setText(book.title());
             authorField.setText(book.author());
             genreField.setText(book.genre() == null ? "" : book.genre());
+            publisherField.setText(book.publisher() == null ? "" : book.publisher());
+            subjectField.setText(book.subject() == null ? "" : book.subject());
             yearSpinner.getValueFactory().setValue(
                     book.publicationYear() == null ? 0 : book.publicationYear());
             copiesSpinner.getValueFactory().setValue(book.totalCopies());
@@ -87,7 +93,9 @@ public final class BookEditorController {
                 totalCopies,
                 availableCopies,
                 genreField.getText(),
-                year);
+                year,
+                publisherField.getText(),
+                subjectField.getText());
         Task<Book> saveTask = new Task<>() {
             @Override
             protected Book call() throws Exception {

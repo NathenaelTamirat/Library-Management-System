@@ -334,6 +334,11 @@ class CirculationServiceTest {
             return java.util.List.of();
         }
 
+        @Override
+        public java.util.List<com.library.domain.AuditEntry> findBetween(java.time.Instant from, java.time.Instant to, int limit) {
+            return java.util.List.of();
+        }
+
     }
 
     private static final class RecordingFines implements FineRepository {

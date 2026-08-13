@@ -30,6 +30,8 @@ class JdbcBookRepositoryTest {
                         available_copies INTEGER NOT NULL,
                         genre VARCHAR(100),
                         publication_year INTEGER,
+                        publisher TEXT,
+                        subject TEXT,
                         CHECK (available_copies BETWEEN 0 AND total_copies)
                     )
                     """);
@@ -48,6 +50,46 @@ class JdbcBookRepositoryTest {
         assertEquals(2018, loaded.publicationYear());
         assertEquals(List.of(book), repository.search("programming"));
         assertEquals(List.of(book), repository.search("2018"));
+    }
+
+    @Test
+    void insertsUpdatesAndSearchesByPublisherOrSubject() throws Exception {
+        Book book = new Book(
+                "9780134685991",
+                "Effective Java",
+                "Joshua Bloch",
+                1,
+                1,
+                "Programming",
+                2018,
+                "Addison-Wesley",
+                "Java language");
+        repository.save(book);
+
+        Book loaded = repository.findByIsbn(book.isbn()).orElseThrow();
+        assertEquals("Addison-Wesley", loaded.publisher());
+        assertEquals("Java language", loaded.subject());
+        assertEquals(List.of(book), repository.search("addison"));
+        assertEquals(List.of(book), repository.search("java language"));
+
+        Book revised = new Book(
+                book.isbn(),
+                book.title(),
+                book.author(),
+                book.totalCopies(),
+                book.availableCopies(),
+                book.genre(),
+                book.publicationYear(),
+                "Pearson",
+                "Software engineering");
+        repository.update(revised);
+
+        Book updated = repository.findByIsbn(book.isbn()).orElseThrow();
+        assertEquals("Pearson", updated.publisher());
+        assertEquals("Software engineering", updated.subject());
+        assertEquals(List.of(revised), repository.search("pearson"));
+        assertEquals(List.of(revised), repository.search("software engineering"));
+        assertTrue(repository.search("addison").isEmpty());
     }
 
     @Test

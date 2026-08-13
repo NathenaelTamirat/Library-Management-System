@@ -8,6 +8,7 @@ import com.library.domain.LoanPolicy;
 import com.library.domain.Member;
 import com.library.security.AuthorizationService;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -66,6 +67,11 @@ class LoanPolicyServiceTest {
 
         @Override
         public List<com.library.domain.AuditEntry> findByUser(UUID userId, int limit) {
+            return List.of();
+        }
+
+        @Override
+        public List<com.library.domain.AuditEntry> findBetween(Instant from, Instant to, int limit) {
             return List.of();
         }
     }

@@ -40,6 +40,9 @@ class SecurityServicesTest {
 
         assertTrue(authorization.isAllowed(Role.MEMBER, Permission.SEARCH_CATALOG));
         assertFalse(authorization.isAllowed(Role.MEMBER, Permission.MANAGE_CATALOG));
+        assertFalse(authorization.isAllowed(Role.MEMBER, Permission.MANAGE_FINES));
+        assertTrue(authorization.isAllowed(Role.LIBRARIAN, Permission.MANAGE_FINES));
+        assertTrue(authorization.isAllowed(Role.ADMIN, Permission.MANAGE_FINES));
         assertTrue(authorization.isAllowed(Role.ADMIN, Permission.VIEW_AUDIT_LOG));
         assertThrows(SecurityException.class,
                 () -> authorization.require(Role.MEMBER, Permission.MANAGE_USERS));

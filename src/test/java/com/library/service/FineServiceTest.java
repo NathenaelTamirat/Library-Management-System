@@ -30,7 +30,9 @@ class FineServiceTest {
         repository.unpaid.put(member.id(), List.of(fine));
 
         assertEquals(new BigDecimal("2.00"), service.unpaidBalance(member, member.id()));
-        assertThrows(SecurityException.class, () -> service.pay(member, fine.id()));
+        SecurityException denied =
+                assertThrows(SecurityException.class, () -> service.pay(member, fine.id()));
+        assertTrue(denied.getMessage().contains("MANAGE_FINES"));
 
         service.pay(librarian, fine.id());
         assertEquals(fine.id(), repository.paidFineId);
@@ -48,10 +50,15 @@ class FineServiceTest {
                 new AuthorizationService(),
                 new AuditService(audits),
                 java.time.Clock.systemUTC());
+        Member member = new Member(UUID.randomUUID(), "Ada", "ada@example.edu", "hash", 5);
         Librarian librarian = new Librarian(
                 UUID.randomUUID(), "Lib", "lib@example.edu", "hash", "AUD-1", false);
         UUID fineId = UUID.randomUUID();
 
+        SecurityException denied = assertThrows(
+                SecurityException.class,
+                () -> service.payPartial(member, fineId, new BigDecimal("1.25")));
+        assertTrue(denied.getMessage().contains("MANAGE_FINES"));
         service.payPartial(librarian, fineId, new BigDecimal("1.25"));
 
         assertEquals(fineId, repository.paidFineId);
@@ -73,7 +80,9 @@ class FineServiceTest {
         Fine fine = new Fine(
                 UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("4.00"), false, LocalDate.now());
 
-        assertThrows(SecurityException.class, () -> service.waive(member, fine.id()));
+        SecurityException denied =
+                assertThrows(SecurityException.class, () -> service.waive(member, fine.id()));
+        assertTrue(denied.getMessage().contains("MANAGE_FINES"));
         service.waive(librarian, fine.id());
         assertEquals(fine.id(), repository.waivedFineId);
         assertEquals("WAIVE_FINE", audits.actions.get(0));
@@ -158,6 +167,11 @@ class FineServiceTest {
 
         @Override
         public java.util.List<com.library.domain.AuditEntry> findByUser(java.util.UUID userId, int limit) {
+            return java.util.List.of();
+        }
+
+        @Override
+        public java.util.List<com.library.domain.AuditEntry> findBetween(java.time.Instant from, java.time.Instant to, int limit) {
             return java.util.List.of();
         }
 

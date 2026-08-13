@@ -82,7 +82,7 @@ class PresentationContractTest {
         assertEquals("totalCopiesColumn",
                 document.getElementsByTagName("TableColumn").item(3)
                         .getAttributes().getNamedItem("fx:id").getNodeValue());
-        assertEquals(19, document.getElementsByTagName("Button").getLength());
+        assertEquals(20, document.getElementsByTagName("Button").getLength());
         assertEquals("#search",
                 document.getElementsByTagName("Button").item(0)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
@@ -110,35 +110,38 @@ class PresentationContractTest {
         assertEquals("#showOverdueLoans",
                 document.getElementsByTagName("Button").item(8)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#showAuditLog",
+        assertEquals("#showCirculationSummary",
                 document.getElementsByTagName("Button").item(9)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#showUserAdmin",
+        assertEquals("#showAuditLog",
                 document.getElementsByTagName("Button").item(10)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#showPolicySettings",
+        assertEquals("#showUserAdmin",
                 document.getElementsByTagName("Button").item(11)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#exportCsv",
+        assertEquals("#showPolicySettings",
                 document.getElementsByTagName("Button").item(12)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#addBook",
+        assertEquals("#exportCsv",
                 document.getElementsByTagName("Button").item(13)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#editSelected",
+        assertEquals("#addBook",
                 document.getElementsByTagName("Button").item(14)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#showBookDetail",
+        assertEquals("#editSelected",
                 document.getElementsByTagName("Button").item(15)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#deleteSelected",
+        assertEquals("#showBookDetail",
                 document.getElementsByTagName("Button").item(16)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#showChangePassword",
+        assertEquals("#deleteSelected",
                 document.getElementsByTagName("Button").item(17)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
-        assertEquals("#signOut",
+        assertEquals("#showChangePassword",
                 document.getElementsByTagName("Button").item(18)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
+        assertEquals("#signOut",
+                document.getElementsByTagName("Button").item(19)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
         assertNotNull(getClass().getResource("/view/library.css"));
         assertNotNull(getClass().getResource("/view/book-editor.fxml"));
@@ -151,7 +154,26 @@ class PresentationContractTest {
         assertNotNull(getClass().getResource("/view/policy-settings.fxml"));
         assertNotNull(getClass().getResource("/view/change-password.fxml"));
         assertNotNull(getClass().getResource("/view/overdue-loans.fxml"));
+        assertNotNull(getClass().getResource("/view/circulation-summary.fxml"));
         assertNotNull(getClass().getResource("/view/audit-log.fxml"));
+    }
+
+    @Test
+    void circulationSummaryFxmlWiresDashboardLabelsAndActions() throws Exception {
+        Document document = parse("/view/circulation-summary.fxml");
+
+        assertEquals("VBox", document.getDocumentElement().getNodeName());
+        assertEquals(2, document.getElementsByTagName("Button").getLength());
+        assertEquals("#refresh",
+                document.getElementsByTagName("Button").item(0)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
+        assertEquals("#close",
+                document.getElementsByTagName("Button").item(1)
+                        .getAttributes().getNamedItem("onAction").getNodeValue());
+        assertTrue(hasFxId(document, "openLoansLabel"));
+        assertTrue(hasFxId(document, "overdueLoansLabel"));
+        assertTrue(hasFxId(document, "unpaidFinesLabel"));
+        assertTrue(hasFxId(document, "availableCopiesLabel"));
     }
 
     @Test
@@ -166,8 +188,10 @@ class PresentationContractTest {
     @Test
     void auditLogFxmlWiresFilterAndRefreshActions() throws Exception {
         Document document = parse("/view/audit-log.fxml");
-        assertEquals(2, document.getElementsByTagName("TextField").getLength());
+        assertEquals(4, document.getElementsByTagName("TextField").getLength());
         assertEquals(2, document.getElementsByTagName("Button").getLength());
+        assertTrue(hasFxId(document, "fromFilter"));
+        assertTrue(hasFxId(document, "toFilter"));
         assertEquals("#refresh",
                 document.getElementsByTagName("Button").item(0)
                         .getAttributes().getNamedItem("onAction").getNodeValue());
@@ -341,6 +365,17 @@ class PresentationContractTest {
         }
     }
 
+    private boolean hasFxId(Document document, String id) {
+        var labels = document.getElementsByTagName("Label");
+        for (int index = 0; index < labels.getLength(); index++) {
+            var attribute = labels.item(index).getAttributes().getNamedItem("fx:id");
+            if (attribute != null && id.equals(attribute.getNodeValue())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static AuditService silentAudit() {
         return new AuditService(new com.library.data.AuditRepository() {
             @Override
@@ -359,6 +394,11 @@ class PresentationContractTest {
 
             @Override
             public java.util.List<com.library.domain.AuditEntry> findByUser(UUID userId, int limit) {
+                return java.util.List.of();
+            }
+
+            @Override
+            public java.util.List<com.library.domain.AuditEntry> findBetween(java.time.Instant from, java.time.Instant to, int limit) {
                 return java.util.List.of();
             }
         });

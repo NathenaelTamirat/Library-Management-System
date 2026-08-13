@@ -31,14 +31,22 @@
                GridPane.columnIndex="0" GridPane.rowIndex="3"/>
         <TextField fx:id="genreField" accessibleText="Genre"
                    GridPane.columnIndex="1" GridPane.rowIndex="3"/>
-        <Label text="_Year" mnemonicParsing="true" labelFor="$yearSpinner"
+        <Label text="_Publisher" mnemonicParsing="true" labelFor="$publisherField"
                GridPane.columnIndex="0" GridPane.rowIndex="4"/>
-        <Spinner fx:id="yearSpinner" editable="true" accessibleText="Publication year"
-                 GridPane.columnIndex="1" GridPane.rowIndex="4"/>
-        <Label text="_Copies" mnemonicParsing="true" labelFor="$copiesSpinner"
+        <TextField fx:id="publisherField" accessibleText="Publisher"
+                   GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+        <Label text="_Subject" mnemonicParsing="true" labelFor="$subjectField"
                GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+        <TextField fx:id="subjectField" accessibleText="Subject"
+                   GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+        <Label text="_Year" mnemonicParsing="true" labelFor="$yearSpinner"
+               GridPane.columnIndex="0" GridPane.rowIndex="6"/>
+        <Spinner fx:id="yearSpinner" editable="true" accessibleText="Publication year"
+                 GridPane.columnIndex="1" GridPane.rowIndex="6"/>
+        <Label text="_Copies" mnemonicParsing="true" labelFor="$copiesSpinner"
+               GridPane.columnIndex="0" GridPane.rowIndex="7"/>
         <Spinner fx:id="copiesSpinner" editable="true" accessibleText="Copies"
-                 GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+                 GridPane.columnIndex="1" GridPane.rowIndex="7"/>
     </GridPane>
     <Label fx:id="errorLabel" styleClass="error" accessibleText="Editor status"/>
     <HBox spacing="10">

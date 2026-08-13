@@ -1,6 +1,7 @@
 package com.library.presentation;
 
 import com.library.data.DataSourceFactory;
+import com.library.data.DatabaseDiagnostic;
 import com.library.data.JdbcAuditRepository;
 import com.library.data.JdbcBookRepository;
 import com.library.data.JdbcCirculationReportRepository;
@@ -38,6 +39,7 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 
 public final class LibraryApplication extends Application {
@@ -59,12 +61,19 @@ public final class LibraryApplication extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         this.stage = stage;
-        DataSourceFactory.DatabaseConfig config = new DataSourceFactory.DatabaseConfig(
-                requiredEnvironment("LIBRARY_DB_URL"),
-                requiredEnvironment("LIBRARY_DB_USER"),
-                requiredEnvironment("LIBRARY_DB_PASSWORD"),
-                Integer.parseInt(System.getenv().getOrDefault("LIBRARY_DB_POOL_SIZE", "10")));
-        dataSource = DataSourceFactory.create(config);
+        try {
+            DataSourceFactory.DatabaseConfig config = new DataSourceFactory.DatabaseConfig(
+                    requiredEnvironment("LIBRARY_DB_URL"),
+                    requiredEnvironment("LIBRARY_DB_USER"),
+                    requiredEnvironment("LIBRARY_DB_PASSWORD"),
+                    Integer.parseInt(System.getenv().getOrDefault("LIBRARY_DB_POOL_SIZE", "10")));
+            dataSource = DataSourceFactory.create(config);
+            DatabaseDiagnostic.verify(dataSource);
+        } catch (SQLException | RuntimeException failure) {
+            closeDataSource();
+            showDatabaseUnavailable();
+            return;
+        }
         JdbcUserAdminRepository userAccounts = new JdbcUserAdminRepository(dataSource);
         authorization = new AuthorizationService(new SessionGuard(userAccounts));
         audit = new AuditService(
@@ -151,6 +160,7 @@ public final class LibraryApplication extends Application {
             loader.setController(new CatalogController(
                     catalog,
                     circulation,
+                    circulationReports,
                     fines,
                     recommendations,
                     audit,
@@ -178,9 +188,25 @@ public final class LibraryApplication extends Application {
 
     @Override
     public void stop() {
+        closeDataSource();
+    }
+
+    private void closeDataSource() {
         if (dataSource != null) {
             dataSource.close();
+            dataSource = null;
         }
+    }
+
+    private void showDatabaseUnavailable() {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.initOwner(stage);
+        alert.setTitle("Database unavailable");
+        alert.setHeaderText("Cannot connect to the library database");
+        alert.setContentText(
+                "The application could not start. Check that the database is running and "
+                        + "the connection settings are correct, then try again.");
+        alert.showAndWait();
     }
 
     private static String requiredEnvironment(String name) {

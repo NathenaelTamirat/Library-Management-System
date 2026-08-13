@@ -61,6 +61,39 @@ class CatalogServiceTest {
     }
 
     @Test
+    void addPersistsBookWithNormalizedIsbn() throws Exception {
+        RecordingBooks books = new RecordingBooks();
+        CatalogService catalog = catalogWith(books);
+        Librarian librarian = librarian();
+
+        Book added = catalog.add(
+                librarian,
+                new Book("978-0-13-468599-1", "Effective Java", "Joshua Bloch", 2, 2));
+
+        assertEquals("9780134685991", added.isbn());
+        assertSame(added, books.stored.get("9780134685991"));
+        assertFalse(books.stored.containsKey("978-0-13-468599-1"));
+    }
+
+    @Test
+    void updateAndFindByIsbnUseNormalizedIsbnEquality() throws Exception {
+        RecordingBooks books = new RecordingBooks();
+        books.save(new Book("9780134685991", "Effective Java", "Joshua Bloch", 2, 2));
+        CatalogService catalog = catalogWith(books);
+        Librarian librarian = librarian();
+
+        Book updated = catalog.update(
+                librarian,
+                new Book("978 0 13 468599 1", "Effective Java, Third Edition", "Joshua Bloch", 3, 3));
+
+        assertEquals("9780134685991", updated.isbn());
+        assertEquals(
+                "Effective Java, Third Edition",
+                catalog.findByIsbn("978-0-13-468599-1").orElseThrow().title());
+        assertEquals(1, books.stored.size());
+    }
+
+    @Test
     void deleteRefusesWhenOpenLoansExist() throws Exception {
         RecordingBooks books = new RecordingBooks();
         RecordingLoans loans = new RecordingLoans();
@@ -105,6 +138,14 @@ class CatalogServiceTest {
                 new Book(book.isbn(), book.title(), book.author(), 2, 1)));
     }
 
+    private static CatalogService catalogWith(RecordingBooks books) {
+        return new CatalogService(
+                books,
+                new RecordingLoans(),
+                new AuthorizationService(),
+                new AuditService(new RecordingAudit()));
+    }
+
     private static Librarian librarian() {
         return new Librarian(
                 UUID.randomUUID(), "Libby", "lib@example.edu", "hash", "desk", false);
@@ -137,6 +178,11 @@ class CatalogServiceTest {
 
         @Override
         public java.util.List<com.library.domain.AuditEntry> findByUser(java.util.UUID userId, int limit) {
+            return java.util.List.of();
+        }
+
+        @Override
+        public java.util.List<com.library.domain.AuditEntry> findBetween(java.time.Instant from, java.time.Instant to, int limit) {
             return java.util.List.of();
         }
 

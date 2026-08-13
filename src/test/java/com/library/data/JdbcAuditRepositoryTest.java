@@ -3,8 +3,12 @@ package com.library.data;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.h2.jdbcx.JdbcDataSource;
@@ -56,5 +60,35 @@ class JdbcAuditRepositoryTest {
         assertEquals(2, audits.findRecent(10).size());
         assertEquals("DELETE_BOOK", audits.findByAction("DELETE_BOOK", 10).get(0).action());
         assertEquals(2, audits.findByUser(librarian, 10).size());
+    }
+
+    @Test
+    void findsEntriesInsideInclusiveTimeWindowNewestFirstAndHonorsLimit() throws Exception {
+        Instant from = Instant.parse("2026-07-20T10:00:00Z");
+        Instant to = Instant.parse("2026-07-20T12:00:00Z");
+        insertAt("BEFORE", from.minusSeconds(1));
+        insertAt("AT_START", from);
+        insertAt("MIDDLE", Instant.parse("2026-07-20T11:00:00Z"));
+        insertAt("AT_END", to);
+        insertAt("AFTER", to.plusSeconds(1));
+
+        List<String> actions = audits.findBetween(from, to, 2).stream()
+                .map(entry -> entry.action())
+                .toList();
+
+        assertEquals(List.of("AT_END", "MIDDLE"), actions);
+        assertThrows(IllegalArgumentException.class, () -> audits.findBetween(to, from, 10));
+    }
+
+    private void insertAt(String action, Instant occurredAt) throws Exception {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     INSERT INTO audit_log (action, occurred_at, details)
+                     VALUES (?, ?, '{}')
+                     """)) {
+            statement.setString(1, action);
+            statement.setTimestamp(2, Timestamp.from(occurredAt));
+            statement.executeUpdate();
+        }
     }
 }
