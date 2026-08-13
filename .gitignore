@@ -84,3 +84,6 @@ out/
 
 # Sample configuration (keep template, ignore actual config)
 config/supabase_config.properties.example
+
+# Duplicate project copies
+Library-Management-System-n*/

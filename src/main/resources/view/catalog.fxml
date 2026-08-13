@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml">
+    <top>
+        <VBox spacing="12" styleClass="header">
+            <padding>
+                <Insets top="24" right="24" bottom="18" left="24"/>
+            </padding>
+            <Label text="University Library Catalog" styleClass="title"/>
+            <Label text="_Search catalog" mnemonicParsing="true" labelFor="$searchField"/>
+            <HBox spacing="10">
+                <TextField fx:id="searchField"
+                           promptText="Search by title, author, or ISBN"
+                           accessibleText="Search catalog by title, author, or ISBN"
+                           HBox.hgrow="ALWAYS"/>
+                <Button fx:id="searchButton"
+                        text="_Search"
+                        mnemonicParsing="true"
+                        accessibleText="Search catalog"
+                        defaultButton="true"
+                        onAction="#search"/>
+                <Button fx:id="recommendationsButton"
+                        text="_For you"
+                        mnemonicParsing="true"
+                        accessibleText="Open recommendations"
+                        onAction="#showRecommendations"/>
+                <Button fx:id="borrowButton"
+                        text="_Borrow selected"
+                        mnemonicParsing="true"
+                        accessibleText="Borrow selected book"
+                        onAction="#borrowSelected"/>
+                <Button fx:id="staffCheckoutButton"
+                        text="Staff c_heckout"
+                        mnemonicParsing="true"
+                        accessibleText="Checkout selected book for a member"
+                        onAction="#staffCheckoutSelected"/>
+                <Button fx:id="returnButton"
+                        text="_Return selected"
+                        mnemonicParsing="true"
+                        accessibleText="Return selected book"
+                        onAction="#returnSelected"/>
+                <Button fx:id="finesButton"
+                        text="F_ines"
+                        mnemonicParsing="true"
+                        accessibleText="Open unpaid fines"
+                        onAction="#showFines"/>
+                <Button fx:id="myLoansButton"
+                        text="_My loans"
+                        mnemonicParsing="true"
+                        accessibleText="Open my loans"
+                        onAction="#showMyLoans"/>
+                <Button fx:id="holdsButton"
+                        text="My _holds"
+                        mnemonicParsing="true"
+                        accessibleText="Open my holds for selected book"
+                        onAction="#showHolds"/>
+                <Button fx:id="overdueButton"
+                        text="Over_due"
+                        mnemonicParsing="true"
+                        accessibleText="Open overdue loans report"
+                        onAction="#showOverdueLoans"/>
+                <Button fx:id="summaryButton"
+                        text="Circulation su_mmary"
+                        mnemonicParsing="true"
+                        accessibleText="Open circulation summary dashboard"
+                        onAction="#showCirculationSummary"/>
+                <Button fx:id="auditButton"
+                        text="A_udit log"
+                        mnemonicParsing="true"
+                        accessibleText="Open audit log"
+                        onAction="#showAuditLog"/>
+                <Button fx:id="usersButton"
+                        text="_Users"
+                        mnemonicParsing="true"
+                        accessibleText="Open user administration"
+                        onAction="#showUserAdmin"/>
+                <Button fx:id="policyButton"
+                        text="_Policy"
+                        mnemonicParsing="true"
+                        accessibleText="Open loan policy settings"
+                        onAction="#showPolicySettings"/>
+                <Button fx:id="exportButton"
+                        text="E_xport CSV"
+                        mnemonicParsing="true"
+                        accessibleText="Export CSV reports"
+                        onAction="#exportCsv"/>
+                <Button fx:id="addButton"
+                        text="_Add book"
+                        mnemonicParsing="true"
+                        accessibleText="Add book"
+                        onAction="#addBook"/>
+                <Button fx:id="editButton"
+                        text="_Edit selected"
+                        mnemonicParsing="true"
+                        accessibleText="Edit selected book"
+                        onAction="#editSelected"/>
+                <Button fx:id="detailButton"
+                        text="Detai_l"
+                        mnemonicParsing="true"
+                        accessibleText="View selected book detail"
+                        onAction="#showBookDetail"/>
+                <Button fx:id="deleteButton"
+                        text="_Delete selected"
+                        mnemonicParsing="true"
+                        accessibleText="Delete selected book"
+                        styleClass="danger-button"
+                        onAction="#deleteSelected"/>
+                <Button fx:id="changePasswordButton"
+                        text="Change _password"
+                        mnemonicParsing="true"
+                        accessibleText="Change password"
+                        onAction="#showChangePassword"/>
+                <Button fx:id="signOutButton"
+                        text="Sign _out"
+                        mnemonicParsing="true"
+                        accessibleText="Sign out"
+                        onAction="#signOut"/>
+            </HBox>
+        </VBox>
+    </top>
+    <center>
+        <TableView fx:id="resultsTable" accessibleText="Catalog search results">
+            <columns>
+                <TableColumn fx:id="isbnColumn" text="ISBN" prefWidth="140"/>
+                <TableColumn fx:id="titleColumn" text="Title" prefWidth="280"/>
+                <TableColumn fx:id="authorColumn" text="Author" prefWidth="180"/>
+                <TableColumn fx:id="totalCopiesColumn" text="Total copies" prefWidth="100"/>
+                <TableColumn fx:id="availableColumn" text="Available" prefWidth="100"/>
+            </columns>
+            <BorderPane.margin>
+                <Insets top="16" right="24" bottom="16" left="24"/>
+            </BorderPane.margin>
+        </TableView>
+    </center>
+    <bottom>
+        <Label fx:id="statusLabel" text="Ready" styleClass="status">
+            <BorderPane.margin>
+                <Insets top="0" right="24" bottom="18" left="24"/>
+            </BorderPane.margin>
+        </Label>
+    </bottom>
+</BorderPane>

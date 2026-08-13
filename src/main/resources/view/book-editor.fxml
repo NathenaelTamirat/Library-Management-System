@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns:fx="http://javafx.com/fxml" spacing="16" styleClass="editor-panel">
+    <padding>
+        <Insets top="24" right="24" bottom="24" left="24"/>
+    </padding>
+    <Label fx:id="titleLabel" text="Add book" styleClass="editor-title"/>
+    <GridPane hgap="12" vgap="12">
+        <Label text="_ISBN" mnemonicParsing="true" labelFor="$isbnField"
+               GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <TextField fx:id="isbnField" accessibleText="ISBN"
+                   GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+        <Label text="_Title" mnemonicParsing="true" labelFor="$titleField"
+               GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+        <TextField fx:id="titleField" accessibleText="Title"
+                   GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+        <Label text="_Author" mnemonicParsing="true" labelFor="$authorField"
+               GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+        <TextField fx:id="authorField" accessibleText="Author"
+                   GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+        <Label text="_Genre" mnemonicParsing="true" labelFor="$genreField"
+               GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+        <TextField fx:id="genreField" accessibleText="Genre"
+                   GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+        <Label text="_Publisher" mnemonicParsing="true" labelFor="$publisherField"
+               GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+        <TextField fx:id="publisherField" accessibleText="Publisher"
+                   GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+        <Label text="_Subject" mnemonicParsing="true" labelFor="$subjectField"
+               GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+        <TextField fx:id="subjectField" accessibleText="Subject"
+                   GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+        <Label text="_Year" mnemonicParsing="true" labelFor="$yearSpinner"
+               GridPane.columnIndex="0" GridPane.rowIndex="6"/>
+        <Spinner fx:id="yearSpinner" editable="true" accessibleText="Publication year"
+                 GridPane.columnIndex="1" GridPane.rowIndex="6"/>
+        <Label text="_Copies" mnemonicParsing="true" labelFor="$copiesSpinner"
+               GridPane.columnIndex="0" GridPane.rowIndex="7"/>
+        <Spinner fx:id="copiesSpinner" editable="true" accessibleText="Copies"
+                 GridPane.columnIndex="1" GridPane.rowIndex="7"/>
+    </GridPane>
+    <Label fx:id="errorLabel" styleClass="error" accessibleText="Editor status"/>
+    <HBox spacing="10">
+        <Button fx:id="saveButton" text="_Save" mnemonicParsing="true"
+                accessibleText="Save book" defaultButton="true" onAction="#save"/>
+        <Button text="_Cancel" mnemonicParsing="true" accessibleText="Cancel"
+                cancelButton="true" onAction="#cancel"/>
+    </HBox>
+</VBox>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns:fx="http://javafx.com/fxml" spacing="12" styleClass="dialog-root">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+    <Label text="Loan policy" styleClass="title"/>
+    <GridPane hgap="12" vgap="10">
+        <Label text="Loan days" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <Spinner fx:id="loanDaysSpinner" editable="true" accessibleText="Loan days"
+                 GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+        <Label text="Daily fine" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+        <TextField fx:id="dailyFineField" accessibleText="Daily fine amount"
+                   GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+        <Label text="Replacement fine" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+        <TextField fx:id="replacementFineField" accessibleText="Replacement fine amount"
+                   GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+        <Label text="Max renewals" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+        <Spinner fx:id="maxRenewalsSpinner" editable="true" accessibleText="Max renewals"
+                 GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+        <Label text="Borrow limit" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+        <Spinner fx:id="borrowLimitSpinner" editable="true" accessibleText="Borrow limit"
+                 GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+    </GridPane>
+    <HBox spacing="10">
+        <Button fx:id="saveButton" text="_Save" mnemonicParsing="true"
+                accessibleText="Save loan policy" defaultButton="true" onAction="#save"/>
+        <Button text="_Close" mnemonicParsing="true" accessibleText="Close policy settings"
+                cancelButton="true" onAction="#close"/>
+    </HBox>
+    <Label fx:id="statusLabel" styleClass="status" text="Ready"/>
+</VBox>

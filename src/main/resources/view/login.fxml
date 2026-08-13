@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<StackPane xmlns:fx="http://javafx.com/fxml" styleClass="login-background">
+    <VBox maxWidth="420" spacing="14" styleClass="login-card">
+        <padding>
+            <Insets top="32" right="32" bottom="32" left="32"/>
+        </padding>
+        <Label text="University Library" styleClass="login-title"/>
+        <Label text="Sign in with your library account"/>
+        <Label text="_Email" mnemonicParsing="true" labelFor="$emailField"/>
+        <TextField fx:id="emailField"
+                   promptText="Email address"
+                   accessibleText="Email address"/>
+        <Label text="_Password" mnemonicParsing="true" labelFor="$passwordField"/>
+        <PasswordField fx:id="passwordField"
+                       promptText="Password"
+                       accessibleText="Password"/>
+        <Button fx:id="loginButton"
+                text="_Sign in"
+                mnemonicParsing="true"
+                maxWidth="Infinity"
+                defaultButton="true"
+                accessibleText="Sign in"
+                onAction="#login"/>
+        <Label fx:id="errorLabel" styleClass="error" accessibleText="Sign in status"/>
+    </VBox>
+</StackPane>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns:fx="http://javafx.com/fxml" spacing="12" styleClass="dialog-root">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+    <Label text="Unpaid fines" styleClass="title"/>
+    <Label fx:id="balanceLabel" text="Balance: 0.00" accessibleText="Unpaid fine balance"/>
+    <Label text="_Unpaid fines list" mnemonicParsing="true" labelFor="$finesList"/>
+    <ListView fx:id="finesList" prefHeight="280" accessibleText="Unpaid fines list"/>
+    <HBox spacing="10">
+        <Button fx:id="refreshButton" text="_Refresh" mnemonicParsing="true"
+                accessibleText="Refresh fines" onAction="#refresh"/>
+        <Button fx:id="payButton" text="_Pay selected" mnemonicParsing="true"
+                accessibleText="Pay selected fine" onAction="#paySelected"/>
+        <Button text="_Close" mnemonicParsing="true" accessibleText="Close fines"
+                cancelButton="true" onAction="#close"/>
+    </HBox>
+    <Label fx:id="statusLabel" styleClass="status" text="Ready"/>
+</VBox>

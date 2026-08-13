@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns:fx="http://javafx.com/fxml" spacing="12" styleClass="dialog-root">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+    <Label text="User administration" styleClass="title"/>
+    <TableView fx:id="usersTable" prefHeight="260" accessibleText="Library users">
+        <columns>
+            <TableColumn fx:id="emailColumn" text="Email" prefWidth="200"/>
+            <TableColumn fx:id="nameColumn" text="Name" prefWidth="140"/>
+            <TableColumn fx:id="roleColumn" text="Role" prefWidth="100"/>
+            <TableColumn fx:id="activeColumn" text="Active" prefWidth="70"/>
+        </columns>
+    </TableView>
+    <HBox spacing="10">
+        <Button fx:id="refreshButton" text="_Refresh" mnemonicParsing="true"
+                accessibleText="Refresh users" onAction="#refresh"/>
+        <Button fx:id="activateButton" text="_Activate" mnemonicParsing="true"
+                accessibleText="Activate selected user" onAction="#activateSelected"/>
+        <Button fx:id="deactivateButton" text="_Deactivate" mnemonicParsing="true"
+                accessibleText="Deactivate selected user" onAction="#deactivateSelected"/>
+        <ChoiceBox fx:id="roleChoice" accessibleText="Role for selected user"/>
+        <Button fx:id="roleButton" text="Set _role" mnemonicParsing="true"
+                accessibleText="Change role for selected user" onAction="#changeRoleSelected"/>
+        <Button fx:id="resetButton" text="Reset _password" mnemonicParsing="true"
+                accessibleText="Reset password for selected user" onAction="#resetPasswordSelected"/>
+    </HBox>
+    <Label text="Create user" styleClass="subtitle"/>
+    <GridPane hgap="10" vgap="8">
+        <Label text="Name" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <TextField fx:id="nameField" accessibleText="New user name"
+                   GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+        <Label text="Email" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+        <TextField fx:id="emailField" accessibleText="New user email"
+                   GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+        <Label text="Password" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+        <PasswordField fx:id="passwordField" accessibleText="New user password"
+                       GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+        <Label text="Role" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+        <ChoiceBox fx:id="createRoleChoice" accessibleText="New user role"
+                   GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+    </GridPane>
+    <HBox spacing="10">
+        <Button fx:id="createButton" text="_Create user" mnemonicParsing="true"
+                accessibleText="Create user" defaultButton="true" onAction="#createUser"/>
+        <Button text="_Close" mnemonicParsing="true" accessibleText="Close user administration"
+                cancelButton="true" onAction="#close"/>
+    </HBox>
+    <Label fx:id="statusLabel" styleClass="status" text="Ready"/>
+</VBox>

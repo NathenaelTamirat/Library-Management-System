@@ -1,0 +1,91 @@
+.root {
+    -fx-font-family: "System";
+    -fx-background-color: #f4f7fb;
+}
+
+.header {
+    -fx-background-color: #17324d;
+}
+
+.title {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.text-field {
+    -fx-pref-height: 40px;
+    -fx-background-radius: 6px;
+}
+
+.button {
+    -fx-pref-height: 40px;
+    -fx-padding: 0 24px;
+    -fx-background-color: #d9a441;
+    -fx-text-fill: #14283c;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6px;
+}
+
+.danger-button {
+    -fx-background-color: #b33a3a;
+    -fx-text-fill: white;
+}
+
+.list-view {
+    -fx-background-color: white;
+    -fx-border-color: #d8e0e8;
+    -fx-border-radius: 6px;
+}
+
+.list-cell {
+    -fx-padding: 14px;
+    -fx-font-size: 15px;
+}
+
+.status {
+    -fx-text-fill: #506275;
+}
+
+.login-background {
+    -fx-background-color: linear-gradient(to bottom right, #17324d, #28557b);
+}
+
+.login-card {
+    -fx-background-color: white;
+    -fx-background-radius: 10px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.25), 24, 0.2, 0, 8);
+}
+
+.login-title {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #17324d;
+}
+
+.error {
+    -fx-text-fill: #a32828;
+}
+
+.editor-panel {
+    -fx-background-color: white;
+}
+
+.editor-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #17324d;
+}
+
+.recommendations-panel {
+    -fx-background-color: #f4f7fb;
+}
+
+.recommendations-subtitle {
+    -fx-text-fill: #506275;
+}
+
+.recommendations-panel .list-cell {
+    -fx-padding: 14px;
+    -fx-line-spacing: 4px;
+}

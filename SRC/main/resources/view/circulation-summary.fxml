@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns:fx="http://javafx.com/fxml" spacing="16" styleClass="dialog-root">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+    <Label text="Circulation summary" styleClass="title"/>
+    <GridPane hgap="24" vgap="14">
+        <Label text="Open loans" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <Label fx:id="openLoansLabel" text="—" accessibleText="Open loans count"
+               GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+        <Label text="Overdue loans" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+        <Label fx:id="overdueLoansLabel" text="—" accessibleText="Overdue loans count"
+               GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+        <Label text="Unpaid fines" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+        <Label fx:id="unpaidFinesLabel" text="—" accessibleText="Unpaid fines count and total"
+               GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+        <Label text="Available copies" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+        <Label fx:id="availableCopiesLabel" text="—" accessibleText="Available and total copies"
+               GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+    </GridPane>
+    <HBox spacing="10">
+        <Button fx:id="refreshButton" text="_Refresh" mnemonicParsing="true"
+                accessibleText="Refresh circulation summary" defaultButton="true"
+                onAction="#refresh"/>
+        <Button text="_Close" mnemonicParsing="true"
+                accessibleText="Close circulation summary" cancelButton="true"
+                onAction="#close"/>
+    </HBox>
+    <Label fx:id="statusLabel" text="Ready" styleClass="status"/>
+</VBox>
